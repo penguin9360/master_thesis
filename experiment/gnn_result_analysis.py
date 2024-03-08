@@ -125,3 +125,5 @@ if experiment_mode == 'regression':
     plt.title(scatter_plot_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}")
     plt.legend()
     plt.savefig(scatter_plot_path)
+
+print("Analysis done!")

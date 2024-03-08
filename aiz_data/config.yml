@@ -1,0 +1,11 @@
+policy:
+  files:
+    uspto:
+      - /data1/s2917211/s2917211/aizynthfinder/aiz_data/uspto_model.hdf5
+      - /data1/s2917211/s2917211/aizynthfinder/aiz_data/uspto_templates.hdf5
+filter:
+  files:
+    uspto: /data1/s2917211/s2917211/aizynthfinder/aiz_data/uspto_filter_model.hdf5
+stock:
+  files:
+    zinc: /data1/s2917211/s2917211/aizynthfinder/aiz_data/zinc_stock.hdf5

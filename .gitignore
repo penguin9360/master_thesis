@@ -1,0 +1,12 @@
+*
+!*.py
+!*.slurm
+!*.yml
+!.gitignore
+!readme.md
+!*/
+tests/*
+aizynthfinder/*
+docs/*
+.github/
+task*

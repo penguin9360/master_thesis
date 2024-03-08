@@ -1,0 +1,31 @@
+properties:
+  C: 1.4
+  cutoff_cumulative: 0.995
+  cutoff_number: 50
+  max_transforms: 9
+  default_prior: 0.5
+  use_prior: True
+  return_first: True  
+  iteration_limit: 1000
+  time_limit: 900
+  exclude_target_from_stock: True
+  template_column: retro_template
+  filter_cutoff: 0.05
+  prune_cycles_in_search: True
+  additive_expansion: False
+  search_algorithm: aizynthfinder.search.retrostar.search_tree.SearchTree
+  post_processing: {min_routes: 5, max_routes: 25, all_routes: False, route_distance_model: None}
+molecule_cost:
+  aizynthfinder.search.retrostar.cost.RetroStarCost:
+    model_path: /data1/s2917211/s2917211/aizynthfinder/aiz_data/retrostar_value_model.pickle
+policy:
+  template-based:
+    uspto:
+      - /home/s2917211/data1/s2917211/aizynthfinder/aiz_data/uspto_model.hdf5
+      - /home/s2917211/data1/s2917211/aizynthfinder/aiz_data/uspto_templates.hdf5
+filter:
+  files:
+    uspto: /home/s2917211/data1/s2917211/aizynthfinder/aiz_data/uspto_filter_model.hdf5
+stock:
+  files:
+    zinc: /home/s2917211/data1/s2917211/aizynthfinder/aiz_data/zinc_stock.hdf5

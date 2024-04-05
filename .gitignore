@@ -10,3 +10,4 @@ aizynthfinder/*
 docs/*
 .github/
 task*
+*.csv

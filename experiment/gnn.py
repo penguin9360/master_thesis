@@ -9,13 +9,14 @@ import random
 
 # experiment_name = "50ktest2"
 experiment_name = "1k"
-experiment_mode = 'multiclass' # 'regression' or 'multiclass' 
+experiment_mode = 'regression' # 'regression' or 'multiclass' 
 results_dir = "results/" + experiment_name + "/"
 figures_dir = "figures/" + experiment_name + "/"
-chemprop_train_csv = "gnn/data/" + experiment_name + "_train.csv"
-chemprop_test_csv = "gnn/data/" + experiment_name + "_test.csv"
+training_set = "./train_test/" + experiment_name + "_" + experiment_mode + "_train.csv"
+test_set = "./train_test/" + experiment_name + "_" + experiment_mode + "_test.csv"
 chemprop_prediction = "gnn/data/" + experiment_name + "_" + experiment_mode + "_prediction"
 chemprop_model_dir = "gnn/model/" + experiment_name + "_" + experiment_mode 
+extract_file_from_hdf = "./result_extract/" + experiment_name + "_extract.csv"
 UNSOLVED_LENGTH = 0
 NO_CUDA_OPTION = 'False'
 
@@ -41,9 +42,31 @@ def get_files_in_directory(directory):
     return file_list
 
 
-def train_test_split(X, y, test_size):
+def train_test_split(X, y, test_size, y_regrouped):
+    if os.path.exists(training_set) and os.path.exists(test_set):
+        print(f"Training and test sets already exist. Loading from files {training_set} and {test_set}...")
+        # Read X_train, X_test, y_train, y_test from files
+        with open(training_set, mode='r') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip the header
+            train_data = list(reader)
+        with open(test_set, mode='r') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip the header
+            test_data = list(reader)
+        
+        # Separate X and y for train and test sets
+        X_train, y_train = zip(*train_data)
+        X_test, y_test = zip(*test_data)
+        
+        return list(X_train), list(X_test), list(y_train), list(y_test)
+
+    print(f"Training and test sets do not exist. Creating new training and test sets {training_set}, {test_set}...")
     # Combine X and y to shuffle together
     combined = list(zip(X, y))
+    #@TODO: Buggy, figure out a way to accomodate two data types for two experiment modes
+    if 'multiclass' in training_set:
+        combined = list(zip(X, y_regrouped))
     random.shuffle(combined)  # Shuffling the combined data
 
     # Split the data
@@ -56,16 +79,33 @@ def train_test_split(X, y, test_size):
     X_test, y_test = zip(*test_data)
 
     # Write to train.csv
-    with open(chemprop_train_csv, mode='w', newline='') as file:
+    with open(training_set, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['smile', 'route_length'])  # Writing the header
+        writer.writerow(['smiles', 'route_length'])  # Writing the header
+        for row in train_data:
+            writer.writerow(row)
+            
+    
+    # Write to multiclass training set
+    multiclass_training_set = training_set.replace("_regression_", "_multiclass_")
+    with open(multiclass_training_set, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['smiles', 'route_length'])  # Writing the header
         for row in train_data:
             writer.writerow(row)
 
     # Write to test.csv
-    with open(chemprop_test_csv, mode='w', newline='') as file:
+    with open(test_set, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['smile', 'route_length'])  # Writing the header
+        writer.writerow(['smiles', 'route_length'])  # Writing the header
+        for row in test_data:
+            writer.writerow(row)
+
+    # Write to multiclass test set
+    multiclass_test_set = test_set.replace("_regression_", "_multiclass_")
+    with open(multiclass_test_set, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['smiles', 'route_length'])
         for row in test_data:
             writer.writerow(row)
 
@@ -80,19 +120,36 @@ route_lengths = []
 unsolved_counter = 0
 
 # Read all HDF files and extract info
-for f in file_list:
-    data = pd.read_hdf(f, "table")
-    for i in range(len(data)):
-        smile = data['target'][i]
-        is_solved = data['is_solved'][i]
-        route_length = data['number_of_steps'][i]
-        # print(smile, is_solved, route_length)
-        if not is_solved:
+if os.path.isfile(extract_file_from_hdf):
+    print(f"Reading from HDF, extraction file exists. Loading from file {extract_file_from_hdf}...")
+    with open(extract_file_from_hdf, mode='r') as file:
+        reader = csv.reader(file)
+        next(reader)
+        combined_data = list(reader)
+        raw_smiles, route_lengths = zip(*combined_data)
+    for i in range(len(route_lengths)):
+        if int(route_lengths[i]) == 0:
             unsolved_counter += 1
-            print(f"Unsolved molecule #{unsolved_counter}: {smile}, with original route length {route_length} set to {UNSOLVED_LENGTH}")
-            route_length = UNSOLVED_LENGTH
-        raw_smiles.append(smile)
-        route_lengths.append(route_length)
+else:
+    print(f"Reading from HDF and writing to extraction file {extract_file_from_hdf}...")
+    for f in file_list:
+        data = pd.read_hdf(f, "table")
+        for i in range(len(data)):
+            smile = data['target'][i]
+            is_solved = data['is_solved'][i]
+            route_length = data['number_of_steps'][i]
+            if not is_solved:
+                unsolved_counter += 1
+                print(f"Unsolved molecule #{unsolved_counter}: {smile}, with original route length {route_length} set to {UNSOLVED_LENGTH}")
+                route_length = UNSOLVED_LENGTH
+            raw_smiles.append(smile)
+            route_lengths.append(route_length)
+            combined_data = list(zip(raw_smiles, route_lengths))
+
+    with open(extract_file_from_hdf, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['smiles', 'route_length'])
+        writer.writerows(combined_data)
 
 print(f"       =================================================================================================================================================== \n\
       Import completed. {len(raw_smiles) - unsolved_counter} out of {len(raw_smiles)} were solved. Starting encoding... \n \
@@ -121,13 +178,13 @@ print(f"Regrouped route lengths:\n {Counter(route_lengths_regrouped).keys()} \n 
 
 # to do multiclass, change route_lengths to route_lengths_regrouped
 if experiment_mode == 'regression':
-    X_train, X_test, y_train, y_test = train_test_split(raw_smiles, route_lengths, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(raw_smiles, route_lengths, test_size=0.2, y_regrouped=route_lengths_regrouped)
 else:
-    X_train, X_test, y_train, y_test = train_test_split(raw_smiles, route_lengths_regrouped, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(raw_smiles, route_lengths_regrouped, test_size=0.2, y_regrouped=route_lengths_regrouped)
 print(f"Performing {experiment_mode}. Train_test_split:\n X_train: ", len(X_train), ", X_test: ", len(X_test), ", y_train: ", len(y_train), ", y_test: ", len(y_test))
 
 # print("Preparing training data for chemprop...")
-# with open(chemprop_train_csv, 'w') as f:
+# with open(training_set, 'w') as f:
 #     writer = csv.writer(f)
 #     writer.writerow(['smile','route_length'])
 #     rows = []
@@ -137,7 +194,7 @@ print(f"Performing {experiment_mode}. Train_test_split:\n X_train: ", len(X_trai
 # print("Training Data preparation for chemprop completed.")
 
 # print("Preparing testing data for chemprop...")
-# with open(chemprop_test_csv, 'w') as f:
+# with open(test_set, 'w') as f:
 #     writer = csv.writer(f)
 #     writer.writerow(['smile','route_length'])
 #     rows = []
@@ -146,12 +203,11 @@ print(f"Performing {experiment_mode}. Train_test_split:\n X_train: ", len(X_trai
 #     writer.writerows(rows)
 # print("Testing Data preparation for chemprop completed.")
 
-# Training new model. The '1k_multiclass' won't work for some reasons. 
 if is_empty_folder(chemprop_model_dir):
     print("Model directory is empty - training new chemprop model...")
     if experiment_mode == 'multiclass':
         training_arguments = [
-            '--data_path', chemprop_train_csv,
+            '--data_path', training_set,
             '--dataset_type', 'multiclass',
             '--save_dir', chemprop_model_dir,
             # '--no_cuda', NO_CUDA_OPTION,
@@ -159,7 +215,7 @@ if is_empty_folder(chemprop_model_dir):
         ]
     else:
         training_arguments = [
-            '--data_path', chemprop_train_csv,
+            '--data_path', training_set,
             '--dataset_type', experiment_mode,
             '--save_dir', chemprop_model_dir,
             # '--no_cuda', NO_CUDA_OPTION,
@@ -170,7 +226,7 @@ if is_empty_folder(chemprop_model_dir):
 
 print("Running predictions using chemprop model in ", chemprop_model_dir)
 predicting_arguments = [
-    '--test_path', chemprop_test_csv,
+    '--test_path', test_set,
     '--preds_path', chemprop_prediction,
     '--checkpoint_dir', chemprop_model_dir,
 ]

@@ -15,16 +15,11 @@ import matplotlib.pyplot as plt
 
 # experiment_name = "50ktest2"
 experiment_name = "1k"
-experiment_mode = 'multiclass' # 'regression' or 'multiclass' 
+experiment_mode = 'regression' # 'regression' or 'multiclass' 
 results_dir = "results/" + experiment_name + "/"
 figures_dir = "figures/" + experiment_name + "/"
-chemprop_train_csv = "gnn/data/" + experiment_name + "_train.csv"
-chemprop_test_csv = "gnn/data/" + experiment_name + "_test.csv"
-chemprop_prediction = "gnn/data/" + experiment_name + "_" + experiment_mode + "_prediction"
-chemprop_model_dir = "gnn/model/" + experiment_name + "_" + experiment_mode 
 file_name = "gnn/data/" + experiment_name + "_" + experiment_mode + "_prediction"
-test_file = "gnn/data/" + experiment_name + "_test.csv"
-
+test_file = "./train_test/" + experiment_name + experiment_mode + "_test.csv"
 
 # Read the CSV file and import data into a dataframe
 df = pd.read_csv(file_name)

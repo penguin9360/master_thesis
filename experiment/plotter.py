@@ -127,7 +127,7 @@ def make_confusion_matrix(cf,
         fig.savefig(filename) 
 
 
-def nclass_classification_mosaic_plot(n_classes, results, filename):
+def nclass_classification_mosaic_plot(n_classes, results, filename, title=None):
     """
     build a mosaic plot from the results of a classification
     
@@ -203,7 +203,7 @@ def nclass_classification_mosaic_plot(n_classes, results, filename):
     ax.axes.yaxis.set_ticks([])
     ax.tick_params(axis='x', which='major', labelsize=14)
 
-    ax.set_title('Classification Report', fontdict=title_font_dict, pad=25)
+    ax.set_title(title, fontdict=title_font_dict, pad=25)
     ax.set_xlabel('Observed Class', fontdict=axis_label_font_dict, labelpad=10)
     ax.set_ylabel('Predicted Class', fontdict=axis_label_font_dict, labelpad=35)
 

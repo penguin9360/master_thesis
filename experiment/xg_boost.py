@@ -300,7 +300,13 @@ def run_xgboost():
     #     n_estimators=500,
     #     early_stopping_rounds=10
     # )
+
+    # LabelEncoder magic - otherwise it throws ValueError: Invalid classes inferred from unique values of `y`
+    le = LabelEncoder()
+    y_train = le.fit_transform(y_train)
+
     if experiment_mode == 'multiclass':
+
         if os.path.exists(xgboost_model_dir):
             print(f"Model directory exists. Loading model from {xgboost_model_dir}...")
             model = XGBClassifier()
@@ -308,11 +314,6 @@ def run_xgboost():
         else:
             model = XGBClassifier()
             # model.fit(X_train, y_train, eval_set=[(X_test, y_test)])
-
-            # LabelEncoder magic - otherwise it throws ValueError: Invalid classes inferred from unique values of `y`
-            le = LabelEncoder()
-            y_train = le.fit_transform(y_train)
-
             model.fit(X_train, y_train, verbose=2)
             # model.fit(np.reshape(X_train, (-1, 1)), np.reshape(y_train, (-1, 1)), verbose=2)
             # model.fit(DMatrix(np.reshape(X_train, (-1, 1))), DMatrix(np.reshape(y_train, (-1, 1))), verbose=2)
@@ -320,7 +321,6 @@ def run_xgboost():
                 os.makedirs("xgboost/model")
             model.save_model(xgboost_model_dir)
             
-
             print(f"Fitting finished. Model saved to {xgboost_model_dir}. Calculating metrics in a different thread...")
 
         # cross validataion - this may lead to a segfault on large datasets for some reasons (https://github.com/dmlc/xgboost/issues/9369), so using multi-threading 
@@ -441,8 +441,6 @@ def run_xgboost():
             model.load_model(xgboost_model_dir)
         else:
             model = XGBRegressor()
-            le = LabelEncoder()
-            y_train = le.fit_transform(y_train)
             model.fit(X_train, y_train, verbose=2)
             if not os.path.exists("xgboost/model"):
                 os.makedirs("xgboost/model")

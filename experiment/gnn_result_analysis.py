@@ -1,4 +1,4 @@
-from plotter import make_confusion_matrix, nclass_classification_mosaic_plot
+from xgboost_plotter import make_confusion_matrix, nclass_classification_mosaic_plot
 import pandas as pd
 from sklearn import metrics
 import seaborn as sns
@@ -13,16 +13,31 @@ import numpy as np
 from sklearn.metrics import mean_absolute_error
 import matplotlib.pyplot as plt
 
-# experiment_name = "50ktest2"
-experiment_name = "1k"
-experiment_mode = 'regression' # 'regression' or 'multiclass' 
-results_dir = "results/" + experiment_name + "/"
-figures_dir = "figures/" + experiment_name + "/"
-file_name = "gnn/data/" + experiment_name + "_" + experiment_mode + "_prediction"
-test_file = "./train_test/" + experiment_name + experiment_mode + "_test.csv"
+from experiment_config import Experiment
 
-# Read the CSV file and import data into a dataframe
-df = pd.read_csv(file_name)
+experiment_name = ""
+experiment_mode = "" 
+results_dir = ""
+figures_dir = ""
+file_name = ""
+test_file = ""
+chemprop_prediction = ""
+test_set = ""
+
+def set_parameters(experiment: Experiment):
+    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, chemprop_prediction, test_set
+
+    experiment_name = experiment.experiment_name
+    experiment_mode = experiment.experiment_mode
+    results_dir = experiment.results_dir
+    figures_dir = experiment.figures_dir
+    file_name = experiment.chemprop_prediction
+    test_file = experiment.test_set
+    chemprop_prediction = experiment.chemprop_prediction
+    test_set = experiment.test_set
+
+
+df = pd.read_csv(chemprop_prediction)
 
 # regrouped route lengths into 4 classes -- for multiclass tasks
 # 0. unsolved (length == 0 as specified earlier)
@@ -89,7 +104,7 @@ if experiment_mode == 'multiclass':
     plt.savefig(roc_graph_path)
 
 if experiment_mode == 'regression':
-    df2 = pd.read_csv(test_file)
+    df2 = pd.read_csv(test_set)
     df['route_length_predicted'] = df['route_length']
     df['route_length_truth'] = df2['route_length']
     print(f"Top 50 lines of result from {experiment_name}_{experiment_mode}\n", df[['smile', 'route_length_predicted', 'route_length_truth']].head(50))

@@ -19,10 +19,12 @@ result_directory = "./results/"
 
 slurm_file = "./casp.slurm"
 slurm_partition = "amd-short"
-aiz_config = "./azf_config.yml"
+aiz_config = "./azf_config_200k.yml"
 clean = True
 current_directory = os.getcwd()
-experiment_name = "xgboost"
+experiment_name = "" # 1k, 50ktest2, 200k
+
+column_name_for_smiles = 'target'
 
 
 def try_read(file_name):
@@ -83,7 +85,7 @@ def check_or_create(mydir):
 def clean_folder(path, exception_file):
     to_clean = glob.glob(path + "*")
     for f in to_clean:
-        if str(f) != exception_file and not os.isdir(f):
+        if str(f) != exception_file and not os.path.isdir(f):
             os.remove(f)
     # if not os.listdir(path):
     #     print(path, "is empty. Removing directory...")
@@ -165,7 +167,11 @@ def submit_slurm():
                 gpu-medium       1-00:00:00 \n \
                 gpu-long         7-00:00:00 \n \
                 mem              14-00:00:0 \n \
-                amd-short           4:00:00")
+                amd-short           4:00:00 \n \
+                amd-long         7-00:00:00 \n \
+                amd-gpu-short       4:00:00 \n \
+                amd-gpu-long     7-00:00:00 \n \
+                  ")
             allowed_partition = {
                 'testing' : "1:00:00", 
                 'cpu-short' : "4:00:00", 
@@ -175,7 +181,10 @@ def submit_slurm():
                 'gpu-medium' : "1-00:00:00", 
                 'gpu-long' : "7-00:00:00", 
                 'mem' : "14-00:00:0", 
-                'amd-short' : "4:00:00"
+                'amd-short' : "4:00:00",
+                'amd-long' : "7-00:00:00", 
+                'amd-gpu-short' : "4:00:00",
+                'amd-gpu-long' : "7-00:00:00",
             }
             partition_choice = ""
             while not any(partition_choice == s for s in allowed_partition):
@@ -231,9 +240,9 @@ else:
 
 # ================================================================== PROGRAM STARTS HERE ===================================================================
 if SPECS_OK:
-    if num_slices > 1001:
+    if num_slices > 1000:
         print("---------------------------------------------------WARNING-------------------------------------------------------\n \
-              Slice number greater than 1001 will not be accepted by sbatch. \n \
+              Slice number greater than 1000 will not be accepted by sbatch. \n \
             -----------------------------------------------------------------------------------------------------------------\n")
     try_read(file_path)
     labels_list = labels.split(',')
@@ -258,7 +267,7 @@ if SPECS_OK:
     df.columns = labels_list
     df = df.head(n=total_num_entries)
     output_file = splitted_directory + "smile_" + str(total_num_entries) + ".txt"
-    df['clean_smiles'].to_csv(output_file, header=None, index=None, mode='w')
+    df[column_name_for_smiles].to_csv(output_file, header=None, index=None, mode='w')
 
     while not os.path.isfile(output_file):
         print("waiting for splitted file to be generated...")

@@ -3,7 +3,7 @@ from xg_boost import run_xgboost, set_parameters as set_xgboost_parameters
 
 from experiment_config import Experiment
 
-experiment_name = "1k" # '1k' or '50ktest2'
+experiment_name = "50ktest2" # '1k' or '50ktest2'
 cleanup = False
 
 if __name__ == "__main__":

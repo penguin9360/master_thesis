@@ -1,15 +1,10 @@
 # Confusion matrix plotter obtained from: https://github.com/DTrimarchi10/confusion_matrix/blob/master/cf_matrix.py
-# Mosaic plotter obtained from: https://towardsdatascience.com/a-different-way-to-visualize-classification-results-c4d45a0a37bb 
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-import pandas as pd
-from statsmodels.graphics.mosaicplot import mosaic
 from matplotlib.patches import Patch
 import itertools
 from collections import deque
-
 
 def make_confusion_matrix(cf,
                           group_names=None,
@@ -23,7 +18,8 @@ def make_confusion_matrix(cf,
                           figsize=None,
                           cmap='Blues',
                           title=None,
-                          filename=None):
+                          filename=None,
+                          fontsize=20):  # Add a new parameter for fontsize
     '''
     This function will make a pretty plot of an sklearn Confusion Matrix cm using a Seaborn heatmap visualization.
 
@@ -54,6 +50,8 @@ def make_confusion_matrix(cf,
                    See http://matplotlib.org/examples/color/colormaps_reference.html
                    
     title:         Title for the heatmap. Default is None.
+    
+    fontsize:      Font size for the text inside each square. Default is 12.
 
     '''
 
@@ -111,104 +109,113 @@ def make_confusion_matrix(cf,
 
     # MAKE THE HEATMAP VISUALIZATION
     plt.figure(figsize=figsize)
-    cf_heatmap = sns.heatmap(cf,annot=box_labels,fmt="",cmap=cmap,cbar=cbar,xticklabels=categories,yticklabels=categories)
+    cf_heatmap = sns.heatmap(cf,annot=box_labels,fmt="",cmap=cmap,cbar=cbar,xticklabels=categories,yticklabels=categories,annot_kws={"size": fontsize})
+    cf_heatmap.set_xticklabels(cf_heatmap.get_xticklabels(), fontsize=fontsize)
+    cf_heatmap.set_yticklabels(cf_heatmap.get_yticklabels(), fontsize=fontsize)
+
+    # Obtain the cbar object from the heatmap
+    cbar_obj = cf_heatmap.collections[0].colorbar
+
+    # Now you can modify the cbar object, for example, setting the font size of its labels
+    cbar_obj.ax.tick_params(labelsize=fontsize) 
+
     fig = cf_heatmap.get_figure()
 
     if xyplotlabels:
-        plt.ylabel('True label')
-        plt.xlabel('Predicted label' + stats_text)
+        plt.ylabel('True label', fontdict={'fontsize': fontsize}, labelpad=fontsize)  # Set font size for y-axis label
+        plt.xlabel('Predicted label' + stats_text, fontdict={'fontsize': fontsize}, labelpad=fontsize)  # Set font size for x-axis label
     else:
-        plt.xlabel(stats_text)
+        plt.xlabel(stats_text, fontdict={'fontsize': fontsize}, labelpad=fontsize)  # Set font size for x-axis label
     
     if title:
-        plt.title(title)
+        plt.title(title, fontdict={'fontsize': fontsize * 1.5}, pad=fontsize)  # Set font size for title
 
     if filename is not None:
-        fig.savefig(filename) 
+        fig.savefig(filename)
 
 
-def nclass_classification_mosaic_plot(n_classes, results, filename, title=None):
-    """
-    build a mosaic plot from the results of a classification
+# def nclass_classification_mosaic_plot(n_classes, results, filename, title=None):
+#     """
+#     build a mosaic plot from the results of a classification
     
-    parameters:
-    n_classes: number of classes
-    results: results of the prediction in form of an array of arrays
+#     parameters:
+#     n_classes: number of classes
+#     results: results of the prediction in form of an array of arrays
     
-    In case of 3 classes the prdiction could look like
-    [[10, 2, 4],
-     [1, 12, 3],
-     [2, 2, 9]
-    ]
-    where there is one array for each class and each array holds the
-    predictions for each class [class 1, class 2, class 3].
+#     In case of 3 classes the prdiction could look like
+#     [[10, 2, 4],
+#      [1, 12, 3],
+#      [2, 2, 9]
+#     ]
+#     where there is one array for each class and each array holds the
+#     predictions for each class [class 1, class 2, class 3].
     
-    This is just a prototype including colors for 6 classes.
-    """
-    class_lists = [range(n_classes)]*2
-    mosaic_tuples = tuple(itertools.product(*class_lists))
+#     This is just a prototype including colors for 6 classes.
+#     """
+#     class_lists = [range(n_classes)]*2
+#     mosaic_tuples = tuple(itertools.product(*class_lists))
     
-    res_list = results[0]
-    for i, l in enumerate(results):
-        if i == 0:
-            pass
-        else:
-            tmp = deque(l)
-            tmp.rotate(-i)
-            res_list.extend(tmp)
-    data = {t:res_list[i] for i,t in enumerate(mosaic_tuples)}
+#     res_list = results[0]
+#     for i, l in enumerate(results):
+#         if i == 0:
+#             pass
+#         else:
+#             tmp = deque(l)
+#             tmp.rotate(-i)
+#             res_list.extend(tmp)
+#     data = {t:res_list[i] for i,t in enumerate(mosaic_tuples)}
 
-    fig, ax = plt.subplots(figsize=(11, 10))
-    plt.rcParams.update({'font.size': 16})
+#     fig, ax = plt.subplots(figsize=(11, 10))
+#     plt.rcParams.update({'font.size': 16})
 
-    font_color = '#2c3e50'
-    pallet = [
-        '#e61f15',
-        '#e69215', 
-        '#e6df15', 
-        '#abe615',
-        '#26e615',
-        '#15e6a7',
-        '#15b9e6',
-        '#1562e6',
-        '#4615e6',
-        '#c015e6',
-        '#e61592',
+#     font_color = '#2c3e50'
+#     pallet = [
+#         '#e61f15',
+#         '#e69215', 
+#         '#e6df15', 
+#         '#abe615',
+#         '#26e615',
+#         '#15e6a7',
+#         '#15b9e6',
+#         '#1562e6',
+#         '#4615e6',
+#         '#c015e6',
+#         '#e61592',
 
 
-    ]
-    colors = deque(pallet[:n_classes])
-    all_colors = []
-    for i in range(n_classes):
-        if i > 0:
-            colors.rotate(-1)
-        all_colors.extend(colors)
+#     ]
+#     colors = deque(pallet[:n_classes])
+#     all_colors = []
+#     for i in range(n_classes):
+#         if i > 0:
+#             colors.rotate(-1)
+#         all_colors.extend(colors)
 
-    props = {(str(a), str(b)):{'color':all_colors[i]} for i,(a, b) in enumerate(mosaic_tuples)}
+#     props = {(str(a), str(b)):{'color':all_colors[i]} for i,(a, b) in enumerate(mosaic_tuples)}
 
-    labelizer = lambda k: ''
+#     labelizer = lambda k: ''
 
-    p = mosaic(data, labelizer=labelizer, properties=props, ax=ax)
+#     p = mosaic(data, labelizer=labelizer, properties=props, ax=ax)
 
-    title_font_dict = {
-        'fontsize': 20,
-        'color' : font_color,
-    }
-    axis_label_font_dict = {
-        'fontsize': 16,
-        'color' : font_color,
-    }
+#     title_font_dict = {
+#         'fontsize': 20,
+#         'color' : font_color,
+#     }
+#     axis_label_font_dict = {
+#         'fontsize': 16,
+#         'color' : font_color,
+#     }
 
-    ax.tick_params(axis = "x", which = "both", bottom = False, top = False)
-    ax.axes.yaxis.set_ticks([])
-    ax.tick_params(axis='x', which='major', labelsize=14)
+#     ax.tick_params(axis = "x", which = "both", bottom = False, top = False)
+#     ax.axes.yaxis.set_ticks([])
+#     ax.tick_params(axis='x', which='major', labelsize=14)
 
-    ax.set_title(title, fontdict=title_font_dict, pad=25)
-    ax.set_xlabel('Observed Class', fontdict=axis_label_font_dict, labelpad=10)
-    ax.set_ylabel('Predicted Class', fontdict=axis_label_font_dict, labelpad=35)
+#     ax.set_title(title, fontdict=title_font_dict, pad=25)
+#     ax.set_xlabel('Observed Class', fontdict=axis_label_font_dict, labelpad=10)
+#     ax.set_ylabel('Predicted Class', fontdict=axis_label_font_dict, labelpad=35)
 
-    legend_elements = [Patch(facecolor=all_colors[i], label='Class {}'.format(i)) for i in range(n_classes)]
-    ax.legend(handles=legend_elements, bbox_to_anchor=(1,1.018), fontsize=16)
+#     legend_elements = [Patch(facecolor=all_colors[i], label='Class {}'.format(i)) for i in range(n_classes)]
+#     ax.legend(handles=legend_elements, bbox_to_anchor=(1,1.018), fontsize=16)
 
-    plt.tight_layout()
-    plt.savefig(filename)
+#     plt.tight_layout()
+#     plt.savefig(filename)

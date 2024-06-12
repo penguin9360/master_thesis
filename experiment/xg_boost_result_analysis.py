@@ -16,12 +16,12 @@ results_dir = ""
 figures_dir = ""
 file_name = ""
 test_file = ""
-chemprop_prediction = ""
+xgboost_prediction = ""
 test_set = ""
 df = None
 
 def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, chemprop_prediction, test_set, df
+    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, xgboost_prediction, test_set, df
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -29,9 +29,9 @@ def set_parameters(experiment: Experiment):
     figures_dir = experiment.figures_dir
     file_name = experiment.chemprop_prediction
     test_file = experiment.test_set
-    chemprop_prediction = experiment.chemprop_prediction
+    xgboost_prediction = experiment.xgboost_prediction
     test_set = experiment.test_set
-    df = pd.read_csv(chemprop_prediction)
+    df = pd.read_csv(xgboost_prediction)
 
 
 # regrouped route lengths into 4 classes -- for multiclass tasks
@@ -40,26 +40,19 @@ def set_parameters(experiment: Experiment):
 # 2. 3-5 steps
 # 3. 6+ steps
 
-def run_gnn_result_analysis():
-    print(f"================================================== Starting GNN Result analysis for {experiment_name} {experiment_mode}... ==================================================")
+def run_xg_boost_result_analysis():
+    print(f"================================================== Starting XGBoost Result analysis for {experiment_name} {experiment_mode}... ==================================================")
     if experiment_mode == 'multiclass':
-        # 1. Create a new column "max_probability" with the maximum values from route_length_class_0 to route_length_class_3
-        df['max_probability'] = df[['route_length_class_0', 'route_length_class_1', 'route_length_class_2', 'route_length_class_3']].max(axis=1)
-
-        # 2. Create a new column "max_predicted_class" with the class that gives the maximum possibility
-        df['max_predicted_class'] = df[['route_length_class_0', 'route_length_class_1', 'route_length_class_2', 'route_length_class_3']].idxmax(axis=1).str[-1:].astype(int)
-
-        # 3. Create a new column "correct_prediction" with True/False based on the comparison of "route_length" and "max_predicted_class"
-        df['correct_prediction'] = df['route_length'] == df['max_predicted_class']
-
-        # 4. Print the specified columns for the first 50 entries
-        print(f"Top 50 lines of result from {experiment_name}_{experiment_mode}\n", df[['smiles', 'route_length', 'max_probability', 'max_predicted_class', 'correct_prediction']].head(50))
-        confusion_matrix_test = metrics.confusion_matrix(df['route_length'], df['max_predicted_class'])
+        df2 = pd.read_csv(test_set)
+        df['route_length_predicted'] = df['route_length']
+        df['route_length_truth'] = df2['route_length']
+        print(f"Top 50 lines of result from {experiment_name}_{experiment_mode}\n", df[['smiles', 'route_length_predicted', 'route_length_truth']].head(50))
+        confusion_matrix_test = metrics.confusion_matrix(df['route_length'], df['route_length_truth'])
         categories = ['unsolved', '1-2', '3-5', '6+']
-        matrix_plot_path = figures_dir + experiment_name + "_gnn_" + experiment_mode + "_confusion_matrix.png"
-        matrix_plot_title = experiment_name + "_gnn_" + experiment_mode + "_confusion_matrix"
-        roc_graph_path = figures_dir + experiment_name + "_gnn_" + experiment_mode + "_ROC_graph.png"
-        roc_graph_title = experiment_name + "_gnn_" + experiment_mode + "_ROC_graph"
+        matrix_plot_path = figures_dir + experiment_name + "_xg_boost_" + experiment_mode + "_confusion_matrix.png"
+        matrix_plot_title = experiment_name + "_xg_boost_" + experiment_mode + "_confusion_matrix"
+        roc_graph_path = figures_dir + experiment_name + "_xg_boost_" + experiment_mode + "_ROC_graph.png"
+        roc_graph_title = experiment_name + "_xg_boost_" + experiment_mode + "_ROC_graph"
 
         print(f"\nConfusion matrix for {experiment_name}_{experiment_mode}: \n", confusion_matrix_test)
         print(f"plotting {matrix_plot_title}...")
@@ -74,15 +67,15 @@ def run_gnn_result_analysis():
             tp = confusion_matrix_test[1, 1]
             return tn, fp, fn, tp
 
-        recall = metrics.recall_score(df['route_length'], df['max_predicted_class'], average='weighted')
-        f1_score = metrics.f1_score(df['route_length'], df['max_predicted_class'], average='weighted')
-        tn, fp, fn, tp = calculate_confusion_matrix_values(df['route_length'], df['max_predicted_class'])
+        recall = metrics.recall_score(df['route_length'], df['route_length_truth'], average='weighted')
+        f1_score = metrics.f1_score(df['route_length'], df['route_length_truth'], average='weighted')
+        tn, fp, fn, tp = calculate_confusion_matrix_values(df['route_length'], df['route_length_truth'])
 
         false_positive_rate = fp / (fp + tn)
 
 
         y_true_binary = label_binarize(df['route_length'], classes=[0, 1, 2, 3])
-        y_pred_binary = label_binarize(df['max_predicted_class'], classes=[0, 1, 2, 3])
+        y_pred_binary = label_binarize(df['route_length_truth'], classes=[0, 1, 2, 3])
 
         average_precision = metrics.average_precision_score(y_true_binary, y_pred_binary, average='weighted')
 
@@ -119,8 +112,8 @@ def run_gnn_result_analysis():
         # Print the Mean Absolute Error value
         print("Mean Absolute Error:", mae)
 
-        scatter_plot_path = figures_dir + experiment_name + "_gnn_" + experiment_mode + "_scatter_plot.png"
-        scatter_plot_title = experiment_name + "_gnn_" + experiment_mode + "_scatter_plot"
+        scatter_plot_path = figures_dir + experiment_name + "_xg_boost_" + experiment_mode + "_scatter_plot.png"
+        scatter_plot_title = experiment_name + "_xg_boost_" + experiment_mode + "_scatter_plot"
 
         print(f"plotting {scatter_plot_title}...")
 
@@ -133,8 +126,8 @@ def run_gnn_result_analysis():
         plt.legend()
         plt.savefig(scatter_plot_path)
 
-    print(f"================================================== Finished GNN Result Analysis for {experiment_name} {experiment_mode}... ==================================================")
+    print(f"================================================== Finished XGBoost Result Analysis for {experiment_name} {experiment_mode}... ==================================================")
 
 
 if __name__ == "__main__":
-    run_gnn_result_analysis()
+    run_xg_boost_result_analysis()

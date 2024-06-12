@@ -15,7 +15,7 @@ from sklearn.preprocessing import LabelEncoder
 # from sklearn.metrics import roc_curve, roc_auc_score
 from xgboost_distribution import XGBDistribution
 from xgboost import XGBClassifier, XGBRegressor, DMatrix
-from xgboost_plotter import make_confusion_matrix, nclass_classification_mosaic_plot
+from confusion_matrix_plotter import make_confusion_matrix
 from collections import Counter
 import threading
 import random
@@ -361,8 +361,7 @@ def run_xgboost():
         Path(figures_dir).mkdir(parents=True, exist_ok=True)
         plot_file_prefix = figures_dir + experiment_name + "_xgboost_" + experiment_mode
         plot_title_prefix = experiment_name + "_xgboost_" + experiment_mode
-        make_confusion_matrix(confusion_matrix_test, categories=categories, figsize=(15, 15), filename=plot_file_prefix + "_confusion_matrix.png", title=plot_title_prefix + "_confusion_matrix")
-        # make_confusion_matrix(confusion_matrix_train, categories=categories, figsize=(15, 15), filename=figures_dir + experiment_name + "_confusion_matrix_train.png")
+        # make_confusion_matrix(confusion_matrix_test, categories=categories, figsize=(15, 15), filename=plot_file_prefix + "_confusion_matrix.png", title=plot_title_prefix + "_confusion_matrix")
     
         # As discussed with Alan, mosaic graph is no longer necessary
         # print("Plotting mosaic graph...")

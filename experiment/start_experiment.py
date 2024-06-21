@@ -13,7 +13,7 @@ run_analysis = True
 enable_gnn = True
 enable_xgboost = True
 
-experiment_name = "50ktest2" # '1k' or '50ktest2'
+experiment_name = "1k" # '1k' or '50ktest2'
 cleanup = False
 
 if __name__ == "__main__":

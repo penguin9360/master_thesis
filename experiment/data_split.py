@@ -11,6 +11,7 @@ num_slices = 0
 labels = ""
 SPECS_OK = False
 file_len = 0
+rewrite_label = False
 
 # For path of directories always include "/" at the end
 splitted_directory = "./splitted/"
@@ -28,7 +29,7 @@ column_name_for_smiles = 'target'
 
 
 def try_read(file_name):
-    global file_path, labels, file_len
+    global file_path, labels, file_len, rewrite_label
     if "./" not in file_name:
         file_name = "./" + file_name
 
@@ -36,7 +37,12 @@ def try_read(file_name):
     try:
         with open(file_name) as f:
             labels = f.readline().strip('\n')
-            print("Labels: ", [i for i in labels.split(',')])
+            if column_name_for_smiles not in labels:
+                print("WARNING: Column name for smiles not found.")
+                labels = ""
+                rewrite_label = True
+            else:
+                print("Labels: ", [i for i in labels.split(',')])
             file_path = file_name
             file_len = len(f.readlines())
             print("Length of file: ", file_len)
@@ -250,8 +256,8 @@ if SPECS_OK:
     print("Slurm file: ", slurm_file)
 
     exp_ans = ""
-    while exp_ans == "" or not exp_ans.isalnum():
-        exp_ans = input("Please type in the name of the experiment: (Letters and digits only) \n")
+    while exp_ans == "" or not ''.join(exp_ans.split("_")).isalnum():
+        exp_ans = input("Please type in the name of the experiment: (Letters, digits, and underscores only) \n")
     experiment_name = to_camel_case(exp_ans)
     print("Experiment name selected: ", experiment_name)
 
@@ -263,10 +269,28 @@ if SPECS_OK:
     slurm_output_directory = slurm_output_directory + experiment_name + "/"
     splitted_directory = splitted_directory + experiment_name + "/"
 
+    if labels == "":
+        print("Caught KeyError! Column name for smiles not found. Adding column name to the file...")
+        with open(file_path, 'r+') as file:
+            content = file.read()
+            file.seek(0, 0)
+            file.write(column_name_for_smiles + '\n' + content)
+            file.close()
+        labels = column_name_for_smiles
+        labels_list = labels.split(',')
+
     df = pd.read_csv(file_path)
     df.columns = labels_list
     df = df.head(n=total_num_entries)
     output_file = splitted_directory + "smile_" + str(total_num_entries) + ".txt"
+
+    if rewrite_label:
+        with open(file_path, 'r+') as file:
+            if file.readline().strip() == column_name_for_smiles:
+                file.readline()  # Skip the first line
+            file.close()
+        rewrite_label = False
+
     df[column_name_for_smiles].to_csv(output_file, header=None, index=None, mode='w')
 
     while not os.path.isfile(output_file):

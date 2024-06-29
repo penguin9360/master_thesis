@@ -24,9 +24,10 @@ class Experiment:
     cleanable_directories = ["gnn", "xgboost", "figures", "result_extract", "train_test"]
 
 
-    def __init__(self, name, mode):
+    def __init__(self, name, mode, no_cuda_option):
         self.experiment_name = name
         self.experiment_mode = mode
+        self.NO_CUDA_OPTION = no_cuda_option
         self.results_dir = "results/" + self.experiment_name + "/"
         self.figures_dir = "figures/" + self.experiment_name + "/"
         self.combined_set = "./train_test/" + self.experiment_name + "/" + self.experiment_name + "_combined.csv"
@@ -38,7 +39,24 @@ class Experiment:
         self.xgboost_model_dir = "./xgboost/model/" + self.experiment_name + "_" + self.experiment_mode + ".json"
         self.extract_file_from_hdf = "./result_extract/" + self.experiment_name + "_extract.csv"
 
-    def cleanup(self):
-        for directory in self.cleanable_directories:
-            shutil.rmtree(directory, ignore_errors=True)
-            os.makedirs(directory)
+    def cleanup(self, name):
+        if name == "All":   
+            for directory in self.cleanable_directories:
+                shutil.rmtree(directory, ignore_errors=True)
+                os.makedirs(directory)
+                print(f"Directory {directory} cleaned.")
+        else:
+            for directory in self.cleanable_directories:
+                for directory in self.cleanable_directories:
+                    for root, dirs, files in os.walk(directory):
+                        for f in files:
+                            if name in f:
+                                file_path = os.path.join(root, f)
+                                os.remove(file_path)
+                                print(f"File {file_path} removed.")
+                        for d in dirs:
+                            if name in d:
+                                dir_path = os.path.join(root, d)
+                                shutil.rmtree(dir_path, ignore_errors=True)
+                                print(f"Directory {dir_path} removed.")
+                

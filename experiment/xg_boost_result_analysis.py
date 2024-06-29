@@ -34,11 +34,31 @@ def set_parameters(experiment: Experiment):
     df = pd.read_csv(xgboost_prediction)
 
 
+def plot_residuals(y_true, y_pred, y_err, filename=None, title=None):
+    fig, ax = plt.subplots()
+    ax.errorbar(
+        y_true,
+        y_true - y_pred,
+        yerr=y_err,
+        marker="o",
+        linestyle="None",
+        c="k",
+        markersize=2.5,
+        linewidth=0.5,
+    )
+    ax.axhline(0, c="k", linestyle="--")
+    ax.set_xlabel("y_test")
+    ax.set_ylabel("y_test - y_pred")
+    ax.set_title(title)
+    plt.savefig(filename)
+
+
 # regrouped route lengths into 4 classes -- for multiclass tasks
 # 0. unsolved (length == 0 as specified earlier)
 # 1. 1-2 steps
 # 2. 3-5 steps
 # 3. 6+ steps
+
 
 def run_xg_boost_result_analysis():
     print(f"================================================== Starting XGBoost Result analysis for {experiment_name} {experiment_mode}... ==================================================")

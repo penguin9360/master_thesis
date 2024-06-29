@@ -122,14 +122,49 @@ results_dir = "./results/" + experiment_name + "/"
 file_names = os.listdir(results_dir)
 existing_indexes = [int(f.split("_")[-2]) for f in file_names]
 indexes = list(range(start_index, end_index + 1))
-missing_indexes = [i for i in indexes if i not in existing_indexes]
-missing_indices_str = str(missing_indexes).replace(" ", "").replace("[", "").replace("]", "")
-print("Missing indices:", missing_indices_str)
+missing_indices = [i for i in indexes if i not in existing_indexes]
+missing_indices_str = str(missing_indices).replace(" ", "").replace("[", "").replace("]", "")
 
-slurm_array_size = "#SBATCH --array=" + missing_indices_str + "\n"
+missing_indices.sort()
+
+missing_indices_interval = []
+interval_begin = missing_indices[0]
+interval_end = missing_indices[0]
+
+for i in range(1, len(missing_indices)):
+    if missing_indices[i] == interval_end + 1:
+        interval_end = missing_indices[i]
+    else:
+        if interval_begin == interval_end:
+            missing_indices_interval.append(str(interval_begin))
+        else:
+            missing_indices_interval.append(str(interval_begin) + "-" + str(interval_end))
+        interval_begin = missing_indices[i]
+        interval_end = missing_indices[i]
+
+if interval_begin == interval_end:
+    missing_indices_interval.append(str(interval_begin))
+else:
+    missing_indices_interval.append(str(interval_begin) + "-" + str(interval_end))
+
+missing_indices_interval_str = ",".join(missing_indices_interval)
+print("Missing indices:", missing_indices_str)
+print("Missing indices interval:", missing_indices_interval_str)
+
+slurm_array_size = "#SBATCH --array=" + missing_indices_interval_str + "\n"
 slurm_smiles = "smiles_csv=\"" + current_directory + splitted_directory.split(".")[-1] + "smile_split_${ROW_INDEX}.txt\"" + "\n"
 slurm_out_script = "#SBATCH --output=" + current_directory + slurm_output_directory.split(".")[-1] + "slurm-%A_%a.out" + "\n"
 slurm_result_output = "output=\"" + current_directory + "/results/" + experiment_name + "/" + experiment_name + "_${ROW_INDEX}_result.hdf\"" + "\n"
 slurm_conf = "config=\"" + current_directory + "/" + aiz_config.split("/")[-1] + "\"" + "\n" 
+slurm_memory = str(input("Enter the integer amount of memory (e.g. 50): "))
+slurm_memory = "#SBATCH --mem=" + slurm_memory + "GB" + "\n"
+
+replace_line(slurm_file, 6, slurm_memory)
+replace_line(slurm_file, 9, slurm_array_size)
+replace_line(slurm_file, 10, slurm_out_script)
+replace_line(slurm_file, 16, slurm_smiles)
+replace_line(slurm_file, 17, slurm_conf)
+replace_line(slurm_file, 18, slurm_result_output)
 
 
+submit_slurm()

@@ -4,7 +4,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 
 column_name_for_smiles = 'target'
-log_file = './splitted/200ktest2/validation_remove_duplicate_multi_thread.log'
+log_file = './train_test/1k/validation_remove_duplicate_multi_thread.log'
 
 num_threads = 20  # Define the number of threads
 
@@ -52,9 +52,9 @@ def check_duplicate(line, lines_a, lines_b, unique_lines):
         logging.info(f"Duplicate found: {line.strip()}")
 
 # Usage example
-file_a = './splitted/50ktest2/smile_50000.txt'
-file_b = './splitted/200ktest2/smile_200000.txt'
-file_c = './splitted/200ktest2/smile_200000_unique_3.csv'
+file_a = './train_test/50ktest2/50ktest2_multiclass_test.csv'
+file_b = './train_test/1k/1k_multiclass_train.csv'
+file_c = './train_test/1k/1k_unique_train.csv'
 
 
 remove_duplicates(file_a, file_b, file_c, num_threads)

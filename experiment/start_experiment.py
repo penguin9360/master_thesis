@@ -6,23 +6,25 @@ from xg_boost_result_analysis import run_xg_boost_result_analysis, set_parameter
 from experiment_config import Experiment
 
 # experiment parameters - run_experiment must be set to True to run any experiments. Same for run_analysis. 
-run_experiment = False
+run_experiment = True
 run_analysis = True
+NO_CUDA_OPTION = False
 
 # enable/disable models
 enable_gnn = True
 enable_xgboost = True
 
 experiment_name = "1k" # '1k' or '50ktest2'
-cleanup = False
+cleanup = True
+cleanup_name = "1k" # 'All' or '1k' or '50ktest2'
 
 if __name__ == "__main__":
-    experiment_regression = Experiment(experiment_name, 'regression')
-    experiment_multiclass = Experiment(experiment_name, 'multiclass')
+    experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION)
+    experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION)
 
     if cleanup:
         # doesn't matter which instance we use, as the parameters are the same
-        experiment_multiclass.cleanup()
+        experiment_multiclass.cleanup(cleanup_name)
 
     # experiment 
     if run_experiment:

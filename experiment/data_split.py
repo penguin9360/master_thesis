@@ -303,6 +303,10 @@ if SPECS_OK:
     slurm_out_script = "#SBATCH --output=" + current_directory + slurm_output_directory.split(".")[-1] + "slurm-%A_%a.out" + "\n"
     slurm_result_output = "output=\"" + current_directory + "/results/" + experiment_name + "/" + experiment_name + "_${ROW_INDEX}_result.hdf\"" + "\n"
     slurm_conf = "config=\"" + current_directory + "/" + aiz_config.split("/")[-1] + "\"" + "\n" 
+    slurm_memory = str(input("Enter the integer amount of memory (e.g. 50): "))
+    slurm_memory = "#SBATCH --mem=" + slurm_memory + "GB" + "\n"
+    
+    replace_line(slurm_file, 6, slurm_memory)
     replace_line(slurm_file, 9, slurm_array_size)
     replace_line(slurm_file, 10, slurm_out_script)
     replace_line(slurm_file, 16, slurm_smiles)

@@ -5,7 +5,8 @@ import pandas as pd
 import numpy as np
 import csv
 import chemprop
-import random
+from helpers import train_test_split, get_files_in_directory, is_empty_folder
+from experiment_config import Experiment
 
 experiment_name = ""
 experiment_mode = ""
@@ -19,7 +20,7 @@ chemprop_model_dir = ""
 extract_file_from_hdf = ""
 UNSOLVED_LENGTH = 0
 NO_CUDA_OPTION = True
-from experiment_config import Experiment
+
 
 def set_parameters(experiment: Experiment):
     global experiment_name, experiment_mode, results_dir, figures_dir, combined_set, training_set, test_set, chemprop_prediction, chemprop_model_dir, extract_file_from_hdf, UNSOLVED_LENGTH, NO_CUDA_OPTION
@@ -37,97 +38,6 @@ def set_parameters(experiment: Experiment):
     UNSOLVED_LENGTH = experiment.UNSOLVED_LENGTH
     NO_CUDA_OPTION = experiment.NO_CUDA_OPTION
 
-
-def is_empty_folder(path):
-    if os.path.exists(path) and os.path.isdir(path):
-        if not os.listdir(path): 
-            return True
-        else:
-            return False
-    else:
-        print("The provided path does not exist or is not a directory.")
-        return True
-
-
-def get_files_in_directory(directory):
-    file_list = []
-    
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            file_path = os.path.join(root, file)
-            file_list.append(file_path)
-    
-    return file_list
-
-
-def train_test_split(X, y, test_size, y_regrouped):
-    if os.path.exists(training_set) and os.path.exists(test_set):
-        print(f"Training and test sets already exist. Loading from files {training_set} and {test_set}...")
-        # Read X_train, X_test, y_train, y_test from files
-        with open(training_set, mode='r') as file:
-            reader = csv.reader(file)
-            next(reader)  # Skip the header
-            train_data = list(reader)
-        with open(test_set, mode='r') as file:
-            reader = csv.reader(file)
-            next(reader)  # Skip the header
-            test_data = list(reader)
-        
-        # Separate X and y for train and test sets
-        X_train, y_train = zip(*train_data)
-        X_test, y_test = zip(*test_data)
-        
-        return list(X_train), list(X_test), list(y_train), list(y_test)
-
-    print(f"Training and test sets do not exist. Creating new training and test sets {training_set}, {test_set}...")
-    if os.path.exists(combined_set):
-        print(f"Combined set already exists. Loading from file {combined_set}...")
-    else:
-        combined = list(zip(X, y, y_regrouped))
-        random.shuffle(combined)
-
-        combined_dir = os.path.dirname(combined_set)
-        if not os.path.exists(combined_dir):
-            os.makedirs(combined_dir)
-
-        with open(combined_set, mode='w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(['smiles', 'route_length', 'route_length_regrouped'])  # Writing the header
-            for row in combined:
-                writer.writerow(row)
-        
-
-    combined_x_y = pd.read_csv(combined_set)
-
-    if experiment_mode == 'multiclass':
-        x_y = list(zip(combined_x_y['smiles'], combined_x_y['route_length_regrouped']))
-    else:
-        x_y = list(zip(combined_x_y['smiles'], combined_x_y['route_length']))
-    
-    # Split the data
-    split_idx = int(len(x_y) * (1 - test_size))
-    train_data = x_y[:split_idx]
-    test_data = x_y[split_idx:]
-
-    # Separating X and y for train and test sets
-    X_train, y_train = zip(*train_data)
-    X_test, y_test = zip(*test_data)
-
-    # Write to train.csv
-    with open(training_set, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['smiles', 'route_length'])  # Writing the header
-        for row in train_data:
-            writer.writerow(row)
-
-    # Write to test.csv
-    with open(test_set, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['smiles', 'route_length'])  # Writing the header
-        for row in test_data:
-            writer.writerow(row)
-
-    return list(X_train), list(X_test), list(y_train), list(y_test)
 
 def run_gnn():
     # ================================================================== PROGRAM STARTS HERE ===================================================================
@@ -193,8 +103,15 @@ def run_gnn():
             route_lengths_regrouped.append("0")
 
     print(f"Regrouped route lengths:\n {Counter(route_lengths_regrouped).keys()} \n {Counter(route_lengths_regrouped).values()}")
+    
+    params = {
+        'training_set': training_set,
+        'test_set': test_set,
+        'combined_set': combined_set,
+        'experiment_mode': experiment_mode
+    }
 
-    X_train, X_test, y_train, y_test = train_test_split(raw_smiles, route_lengths, test_size=0.2, y_regrouped=route_lengths_regrouped)
+    X_train, X_test, y_train, y_test = train_test_split(raw_smiles, route_lengths, test_size=0.2, y_regrouped=route_lengths_regrouped, params=params)
 
     print(f"Performing {experiment_mode}. Train_test_split:\n X_train: ", len(X_train), ", X_test: ", len(X_test), ", y_train: ", len(y_train), ", y_test: ", len(y_test))
 

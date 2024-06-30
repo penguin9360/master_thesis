@@ -17,6 +17,9 @@ class Experiment:
     xgboost_prediction = ""
     xgboost_model_dir = ""
     extract_file_from_hdf = ""
+    inference_option = False
+    inference_name = ""
+    inference_combined_set = ""
 
     UNSOLVED_LENGTH = 0
     NO_CUDA_OPTION = True
@@ -24,21 +27,34 @@ class Experiment:
     cleanable_directories = ["gnn", "xgboost", "figures", "result_extract", "train_test"]
 
 
-    def __init__(self, name, mode, no_cuda_option):
+    def __init__(self, name, mode, no_cuda_option, inference_option, inference_name):
         self.experiment_name = name
+        self.extract_file_from_hdf = "./result_extract/" + self.experiment_name + "_extract.csv"
+        self.inference_option = inference_option
+        self.inference_name = inference_name
         self.experiment_mode = mode
         self.NO_CUDA_OPTION = no_cuda_option
+        
         self.results_dir = "results/" + self.experiment_name + "/"
-        self.figures_dir = "figures/" + self.experiment_name + "/"
         self.combined_set = "./train_test/" + self.experiment_name + "/" + self.experiment_name + "_combined.csv"
         self.training_set = "./train_test/" + self.experiment_name + "/" + self.experiment_name + "_" + self.experiment_mode + "_train.csv"
-        self.test_set = "./train_test/" + self.experiment_name + "/" + self.experiment_name + "_" + self.experiment_mode + "_test.csv"
-        self.chemprop_prediction = "gnn/data/" + self.experiment_name + "_" + self.experiment_mode + "_prediction"
-        self.chemprop_model_dir = "gnn/model/" + self.experiment_name + "_" + self.experiment_mode
-        self.xgboost_prediction = "./xgboost/data/" + self.experiment_name + "_" + self.experiment_mode + "_prediction"
         self.xgboost_model_dir = "./xgboost/model/" + self.experiment_name + "_" + self.experiment_mode + ".json"
-        self.extract_file_from_hdf = "./result_extract/" + self.experiment_name + "_extract.csv"
+        self.chemprop_model_dir = "gnn/model/" + self.experiment_name + "_" + self.experiment_mode
 
+        self.test_set = "./train_test/" + self.experiment_name + "/" + self.experiment_name + "_" + self.experiment_mode + "_test.csv"
+        self.figures_dir = "figures/" + self.experiment_name + "/"
+        self.chemprop_prediction = "gnn/data/" + self.experiment_name + "_" + self.experiment_mode + "_prediction"
+        self.xgboost_prediction = "./xgboost/data/" + self.experiment_name + "_" + self.experiment_mode + "_prediction"
+
+        if self.inference_option:
+            self.test_set = "./train_test/" + self.experiment_name + "_inference_" + self.inference_name + "/" + self.experiment_name + "_inference_" + self.inference_name + "_" + self.experiment_mode + "_test.csv"
+            self.inference_combined_set = "./train_test/" + self.inference_name + "/" + self.inference_name + "_combined.csv"
+            self.figures_dir = "figures/" + self.experiment_name + "_inference_" + self.inference_name + "/"
+            self.chemprop_prediction = "gnn/data/" + self.experiment_name + "_inference_" + self.inference_name + "_" + self.experiment_mode + "_prediction"
+            self.xgboost_prediction = "./xgboost/data/" + self.experiment_name+ "_inference_" + self.inference_name + "_" + self.experiment_mode + "_prediction"
+            
+
+        
     def cleanup(self, name):
         if name == "All":   
             for directory in self.cleanable_directories:

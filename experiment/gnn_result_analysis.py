@@ -1,3 +1,4 @@
+import os
 from confusion_matrix_plotter import make_confusion_matrix
 import pandas as pd
 from sklearn import metrics
@@ -18,10 +19,12 @@ file_name = ""
 test_file = ""
 chemprop_prediction = ""
 test_set = ""
+inference_option = ""
+inference_name = ""
 df = None
 
 def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, chemprop_prediction, test_set, df
+    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, chemprop_prediction, test_set, df, inference_option, inference_name
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -31,7 +34,12 @@ def set_parameters(experiment: Experiment):
     test_file = experiment.test_set
     chemprop_prediction = experiment.chemprop_prediction
     test_set = experiment.test_set
+    inference_option = experiment.inference_option
+    inference_name = experiment.inference_name
     df = pd.read_csv(chemprop_prediction)
+
+    if inference_option:
+        experiment_name += "_inference_" + inference_name
 
 
 # regrouped route lengths into 4 classes -- for multiclass tasks
@@ -131,6 +139,8 @@ def run_gnn_result_analysis():
         plt.ylabel('Predicted Route Length')
         plt.title(scatter_plot_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}")
         plt.legend()
+        if not os.path.exists(os.path.dirname(scatter_plot_path)):
+            os.makedirs(os.path.dirname(scatter_plot_path))
         plt.savefig(scatter_plot_path)
 
     print(f"================================================== Finished GNN Result Analysis for {experiment_name} {experiment_mode}... ==================================================")

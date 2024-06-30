@@ -50,9 +50,12 @@ test_set = ""
 extract_file_from_hdf = ""
 xgboost_prediction = ""
 xgboost_model_dir = ""
+inference_option = ""
+inference_name = ""
+inference_combined_set = ""
 
 def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, UNSOLVED_LENGTH, combined_set, training_set, test_set, extract_file_from_hdf, xgboost_prediction, xgboost_model_dir
+    global experiment_name, experiment_mode, results_dir, figures_dir, UNSOLVED_LENGTH, combined_set, training_set, test_set, extract_file_from_hdf, xgboost_prediction, xgboost_model_dir, inference_option, inference_name, inference_combined_set
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -65,6 +68,9 @@ def set_parameters(experiment: Experiment):
     extract_file_from_hdf = experiment.extract_file_from_hdf
     xgboost_prediction = experiment.xgboost_prediction
     xgboost_model_dir = experiment.xgboost_model_dir
+    inference_option = experiment.inference_option
+    inference_name = experiment.inference_name
+    inference_combined_set = experiment.inference_combined_set
 
 
 def run_xgboost():
@@ -138,7 +144,10 @@ def run_xgboost():
         'training_set': training_set,
         'test_set': test_set,
         'combined_set': combined_set,
-        'experiment_mode': experiment_mode
+        'experiment_mode': experiment_mode,
+        'inference_option': inference_option,
+        'inference_name': inference_name,
+        'inference_combined_set': inference_combined_set
     }
     X_train, X_test, y_train, y_test = train_test_split(raw_smiles, route_lengths, test_size=0.2, y_regrouped=route_lengths_regrouped, params=params)
 

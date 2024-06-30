@@ -18,10 +18,12 @@ file_name = ""
 test_file = ""
 xgboost_prediction = ""
 test_set = ""
+inference_option = ""
+inference_name = ""
 df = None
 
 def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, xgboost_prediction, test_set, df
+    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, xgboost_prediction, test_set, df, inference_option, inference_name
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -31,7 +33,12 @@ def set_parameters(experiment: Experiment):
     test_file = experiment.test_set
     xgboost_prediction = experiment.xgboost_prediction
     test_set = experiment.test_set
+    inference_option = experiment.inference_option
+    inference_name = experiment.inference_name
     df = pd.read_csv(xgboost_prediction)
+
+    if inference_option:
+        experiment_name += "_inference_" + inference_name
 
 
 def plot_residuals(y_true, y_pred, y_err, filename=None, title=None):

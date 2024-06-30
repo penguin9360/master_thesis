@@ -7,10 +7,32 @@ training_set = ""
 test_set = ""
 combined_set = ""
 experiment_mode = ""
+inference_option = ""
+inference_name = ""
+inference_combined_set = ""
+
+def check_and_remove_duplicates(X_train, X_test, y_train, y_test):
+    X_train_set = set(X_train)
+    y_train_set = set(y_train)
+    X_test_filtered = []
+    y_test_filtered = []
+    duplicates_counter = 0
+    for x, y in zip(X_test, y_test):
+        if x not in X_train_set and y not in y_train_set:
+            X_test_filtered.append(x)
+            y_test_filtered.append(y)
+        else:
+            duplicates_counter += 1
+            print(f"Duplicate found: {x}, {y}")
+    X_test = X_test_filtered
+    y_test = y_test_filtered
+    print(f"Removed {duplicates_counter} duplicated entries")
+    return X_test, y_test
+    
 
 def train_test_split(X, y, test_size, y_regrouped, params):
-    global training_set, test_set, combined_set, experiment_mode
-    training_set, test_set, combined_set, experiment_mode = params['training_set'], params['test_set'], params['combined_set'], params['experiment_mode']
+    global training_set, test_set, combined_set, experiment_mode, inference_option, inference_name, inference_combined_set
+    training_set, test_set, combined_set, experiment_mode, inference_option, inference_name, inference_combined_set = params['training_set'], params['test_set'], params['combined_set'], params['experiment_mode'], params['inference_option'], params['inference_name'], params['inference_combined_set']
 
     if os.path.exists(training_set) and os.path.exists(test_set):
         print(f"Training and test sets already exist. Loading from files {training_set} and {test_set}...")
@@ -27,10 +49,13 @@ def train_test_split(X, y, test_size, y_regrouped, params):
         # Separate X and y for train and test sets
         X_train, y_train = zip(*train_data)
         X_test, y_test = zip(*test_data)
+
+        if inference_option: !!!!!
+            X_test, y_test = check_and_remove_duplicates(X_train, X_test, y_train, y_test)
         
         return list(X_train), list(X_test), list(y_train), list(y_test)
 
-    print(f"Training and test sets do not exist. Creating new training and test sets {training_set}, {test_set}...")
+    print(f"Training or test sets do not exist. Creating new training and test sets {training_set}, {test_set}...")
     if os.path.exists(combined_set):
         print(f"Combined set already exists. Loading from file {combined_set}...")
     else:
@@ -60,9 +85,27 @@ def train_test_split(X, y, test_size, y_regrouped, params):
     train_data = x_y[:split_idx]
     test_data = x_y[split_idx:]
 
+    if inference_option:
+        combined_x_y_inference = pd.read_csv(inference_combined_set)
+        if experiment_mode == 'multiclass':
+            x_y_inf = list(zip(combined_x_y_inference['smiles'], combined_x_y_inference['route_length_regrouped']))
+        else:
+            x_y_inf = list(zip(combined_x_y_inference['smiles'], combined_x_y_inference['route_length']))
+        split_idx = int(len(x_y_inf) * (1 - test_size))
+        test_data = x_y_inf[split_idx:]
+
     # Separating X and y for train and test sets
     X_train, y_train = zip(*train_data)
     X_test, y_test = zip(*test_data)
+
+    # handle duplicates here if inference option is enabled
+    if inference_option: !!!!!!!
+        X_test, y_test = check_and_remove_duplicates(X_train, X_test, y_train, y_test)
+
+    if not os.path.exists(os.path.dirname(training_set)):
+        os.makedirs(os.path.dirname(training_set))
+    if not os.path.exists(os.path.dirname(test_set)):
+        os.makedirs(os.path.dirname(test_set))
 
     # Write to train.csv
     with open(training_set, mode='w', newline='') as file:

@@ -10,17 +10,22 @@ run_experiment = True
 run_analysis = True
 NO_CUDA_OPTION = False
 
+inference_option = True
+inference_name = "50ktest2" # '1k' or '50ktest2'
+
 # enable/disable models
 enable_gnn = True
-enable_xgboost = True
+enable_xgboost = False
+enable_regression = True
+enable_multiclass = False
 
 experiment_name = "1k" # '1k' or '50ktest2'
 cleanup = True
 cleanup_name = "1k" # 'All' or '1k' or '50ktest2'
 
 if __name__ == "__main__":
-    experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION)
-    experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION)
+    experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, inference_option, inference_name)
+    experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, inference_option, inference_name)
 
     if cleanup:
         # doesn't matter which instance we use, as the parameters are the same
@@ -29,30 +34,38 @@ if __name__ == "__main__":
     # experiment 
     if run_experiment:
         if enable_gnn:
-            set_gnn_parameters(experiment_regression)
-            run_gnn()
-            set_gnn_parameters(experiment_multiclass)
-            run_gnn()
+            if enable_regression:
+                set_gnn_parameters(experiment_regression)
+                run_gnn()
+            if enable_multiclass:
+                set_gnn_parameters(experiment_multiclass)
+                run_gnn()
         
         if enable_xgboost:
-            set_xgboost_parameters(experiment_regression)
-            run_xgboost()
-            set_xgboost_parameters(experiment_multiclass)
-            run_xgboost()
+            if enable_regression:
+                set_xgboost_parameters(experiment_regression)
+                run_xgboost()
+            if enable_multiclass:
+                set_xgboost_parameters(experiment_multiclass)
+                run_xgboost()
 
     # analysis
     if run_analysis:
         if enable_gnn:
-            set_gnn_analysis_parameters(experiment_regression)
-            run_gnn_result_analysis()
-            set_gnn_analysis_parameters(experiment_multiclass)
-            run_gnn_result_analysis()
+            if enable_regression:
+                set_gnn_analysis_parameters(experiment_regression)
+                run_gnn_result_analysis()
+            if enable_multiclass:
+                set_gnn_analysis_parameters(experiment_multiclass)
+                run_gnn_result_analysis()
 
         if enable_xgboost:
-            set_xg_boost_analysis_parameters(experiment_regression)
-            run_xg_boost_result_analysis()
-            set_xg_boost_analysis_parameters(experiment_multiclass)
-            run_xg_boost_result_analysis()
+            if enable_regression:
+                set_xg_boost_analysis_parameters(experiment_regression)
+                run_xg_boost_result_analysis()
+            if enable_multiclass:
+                set_xg_boost_analysis_parameters(experiment_multiclass)
+                run_xg_boost_result_analysis()
 
 
     

@@ -128,6 +128,9 @@ missing_indices_str = str(missing_indices).replace(" ", "").replace("[", "").rep
 missing_indices.sort()
 
 missing_indices_interval = []
+if len(missing_indices) == 0:
+    print("No missing indices found.")
+    exit()
 interval_begin = missing_indices[0]
 interval_end = missing_indices[0]
 

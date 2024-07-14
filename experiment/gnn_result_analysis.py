@@ -70,6 +70,11 @@ def run_gnn_result_analysis():
         roc_graph_title = experiment_name + "_gnn_" + experiment_mode + "_ROC_graph"
 
         print(f"\nConfusion matrix for {experiment_name}_{experiment_mode}: \n", confusion_matrix_test)
+
+        plot_dir = os.path.dirname(matrix_plot_path)
+        if not os.path.exists(plot_dir):
+            os.makedirs(plot_dir)
+        
         print(f"plotting {matrix_plot_title}...")
         make_confusion_matrix(confusion_matrix_test, categories=categories, figsize=(15, 15), title=matrix_plot_title, filename=matrix_plot_path)
 

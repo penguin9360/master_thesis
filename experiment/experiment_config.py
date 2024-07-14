@@ -20,6 +20,7 @@ class Experiment:
     inference_option = False
     inference_name = ""
     inference_combined_set = ""
+    inference_test_set = ""
 
     UNSOLVED_LENGTH = 0
     NO_CUDA_OPTION = True
@@ -49,6 +50,7 @@ class Experiment:
         if self.inference_option:
             self.test_set = "./train_test/" + self.experiment_name + "_inference_" + self.inference_name + "/" + self.experiment_name + "_inference_" + self.inference_name + "_" + self.experiment_mode + "_test.csv"
             self.inference_combined_set = "./train_test/" + self.inference_name + "/" + self.inference_name + "_combined.csv"
+            self.inference_test_set = "./train_test/" + self.inference_name + "/" + self.inference_name + "_" + self.experiment_mode + "_test.csv"
             self.figures_dir = "figures/" + self.experiment_name + "_inference_" + self.inference_name + "/"
             self.chemprop_prediction = "gnn/data/" + self.experiment_name + "_inference_" + self.inference_name + "_" + self.experiment_mode + "_prediction"
             self.xgboost_prediction = "./xgboost/data/" + self.experiment_name+ "_inference_" + self.inference_name + "_" + self.experiment_mode + "_prediction"

@@ -21,12 +21,13 @@ extract_file_from_hdf = ""
 inference_option = ""
 inference_name = ""
 inference_combined_set = ""
+inference_test_set = ""
 UNSOLVED_LENGTH = 0
 NO_CUDA_OPTION = True
 
 
 def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, combined_set, training_set, test_set, chemprop_prediction, chemprop_model_dir, extract_file_from_hdf, UNSOLVED_LENGTH, NO_CUDA_OPTION, inference_option, inference_name, inference_combined_set
+    global experiment_name, experiment_mode, results_dir, figures_dir, combined_set, training_set, test_set, chemprop_prediction, chemprop_model_dir, extract_file_from_hdf, UNSOLVED_LENGTH, NO_CUDA_OPTION, inference_option, inference_name, inference_combined_set, inference_test_set
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -43,6 +44,7 @@ def set_parameters(experiment: Experiment):
     inference_option = experiment.inference_option
     inference_name = experiment.inference_name
     inference_combined_set = experiment.inference_combined_set
+    inference_test_set = experiment.inference_test_set
 
 
 def run_gnn():
@@ -117,7 +119,8 @@ def run_gnn():
         'experiment_mode': experiment_mode,
         'inference_option': inference_option,
         'inference_name': inference_name,
-        'inference_combined_set': inference_combined_set
+        'inference_combined_set': inference_combined_set,
+        'inference_test_set': inference_test_set
     }
 
     X_train, X_test, y_train, y_test = train_test_split(raw_smiles, route_lengths, test_size=0.2, y_regrouped=route_lengths_regrouped, params=params)

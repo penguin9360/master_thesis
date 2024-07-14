@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=AIZ
-#SBATCH --partition="amd-short"
-#SBATCH --time=4:00:00
+#SBATCH --partition="cpu-long"
+#SBATCH --time=7-00:00:00
 #SBATCH --ntasks=1
-#SBATCH --mem=60GB
+#SBATCH --mem=75GB
 #SBATCH --mail-user="s2917211@vuw.leidenuniv.nl"
 #SBATCH --mail-type="ALL"
-#SBATCH --array=154,433,594,606,729-1000
+#SBATCH --array=943,966
 #SBATCH --output=/data1/s2917211/s2917211/aizynthfinder/experiment/slurm_output/200kValidation4/slurm-%A_%a.out
 
 # source activate aizynth-dev

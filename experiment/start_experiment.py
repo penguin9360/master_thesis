@@ -15,12 +15,12 @@ inference_name = "50ktest2" # '1k' or '50ktest2'
 
 # enable/disable models
 enable_gnn = True
-enable_xgboost = False
+enable_xgboost = True
 enable_regression = True
-enable_multiclass = False
+enable_multiclass = True
 
 experiment_name = "1k" # '1k' or '50ktest2'
-cleanup = True
+cleanup = False
 cleanup_name = "1k" # 'All' or '1k' or '50ktest2'
 
 if __name__ == "__main__":

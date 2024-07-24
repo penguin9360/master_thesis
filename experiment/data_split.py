@@ -25,7 +25,7 @@ clean = True
 current_directory = os.getcwd()
 experiment_name = "" # 1k, 50ktest2, 200k
 
-column_name_for_smiles = 'target'
+column_name_for_smiles = ""
 
 
 def try_read(file_name):
@@ -53,7 +53,7 @@ def try_read(file_name):
 
 
 def check_specs():
-    global file_path, total_num_entries, num_slices, labels, SPECS_OK, file_len
+    global file_path, total_num_entries, num_slices, labels, SPECS_OK, file_len, column_name_for_smiles
     SPECS_OK = False
     if file_path is None or file_path == "":
         file_path = str(input("Please fill in a valid file path: "))
@@ -77,6 +77,10 @@ def check_specs():
 
     if total_num_entries < num_slices:
         total_num_entries = num_slices
+        check_specs()
+
+    if column_name_for_smiles == "" or " " in column_name_for_smiles:
+        column_name_for_smiles = str(input("Please type the name of smiles columns in this data sheet: "))
         check_specs()
 
     SPECS_OK = True

@@ -68,13 +68,15 @@ class Experiment:
                 for directory in self.cleanable_directories:
                     for root, dirs, files in os.walk(directory):
                         for f in files:
-                            if name in f:
+                            if (name + "_") in f:
                                 file_path = os.path.join(root, f)
                                 os.remove(file_path)
                                 print(f"File {file_path} removed.")
                         for d in dirs:
                             if name in d:
-                                dir_path = os.path.join(root, d)
-                                shutil.rmtree(dir_path, ignore_errors=True)
-                                print(f"Directory {dir_path} removed.")
+                                if str(d).split(name)[-1] == '':
+                                    dir_path = os.path.join(root, d)
+                                    shutil.rmtree(dir_path, ignore_errors=True)
+                                    print(f"Directory {dir_path} removed.")
+        print(f"=============================== Cleanup for {name} completed. Note that all models directory are not removed. Remove manually if needed. ===============================")
                 

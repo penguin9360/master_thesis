@@ -6,7 +6,7 @@
 #SBATCH --mem=75GB
 #SBATCH --mail-user="s2917211@vuw.leidenuniv.nl"
 #SBATCH --mail-type="ALL"
-#SBATCH --array=1-1000
+#SBATCH --array=54,87,100,106,119,231,239,249,277,298,301-302,354,359,486,511-512,530,545,601,703,718,780,796,899,992
 #SBATCH --output=/data1/s2917211/s2917211/aizynthfinder/experiment/slurm_output/50k/slurm-%A_%a.out
 
 # source activate aizynth-dev

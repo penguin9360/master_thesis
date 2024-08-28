@@ -12,6 +12,7 @@ class Experiment:
     combined_set = ""
     training_set = ""
     test_set = ""
+    validation_set = ""
     chemprop_prediction = ""
     chemprop_model_dir = ""
     xgboost_prediction = ""
@@ -39,6 +40,7 @@ class Experiment:
         self.results_dir = "results/" + self.experiment_name + "/"
         self.combined_set = "./train_test/" + self.experiment_name + "/" + self.experiment_name + "_combined.csv"
         self.training_set = "./train_test/" + self.experiment_name + "/" + self.experiment_name + "_" + self.experiment_mode + "_train.csv"
+        self.validation_set = "./train_test/" + self.experiment_name + "/" + self.experiment_name + "_" + self.experiment_mode + "_validation.csv"
         self.xgboost_model_dir = "./xgboost/model/" + self.experiment_name + "_" + self.experiment_mode + ".json"
         self.chemprop_model_dir = "gnn/model/" + self.experiment_name + "_" + self.experiment_mode
 

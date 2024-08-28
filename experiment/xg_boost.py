@@ -47,6 +47,7 @@ UNSOLVED_LENGTH = 0
 combined_set = ""
 training_set = ""
 test_set = ""
+validation_set = ""
 extract_file_from_hdf = ""
 xgboost_prediction = ""
 xgboost_model_dir = ""
@@ -56,7 +57,7 @@ inference_combined_set = ""
 inference_test_set = ""
 
 def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, UNSOLVED_LENGTH, combined_set, training_set, test_set, extract_file_from_hdf, xgboost_prediction, xgboost_model_dir, inference_option, inference_name, inference_combined_set, inference_test_set
+    global experiment_name, experiment_mode, results_dir, figures_dir, UNSOLVED_LENGTH, combined_set, training_set, test_set, validation_set, extract_file_from_hdf, xgboost_prediction, xgboost_model_dir, inference_option, inference_name, inference_combined_set, inference_test_set
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -66,6 +67,7 @@ def set_parameters(experiment: Experiment):
     combined_set = experiment.combined_set
     training_set = experiment.training_set
     test_set = experiment.test_set
+    validation_set = experiment.validation_set
     extract_file_from_hdf = experiment.extract_file_from_hdf
     xgboost_prediction = experiment.xgboost_prediction
     xgboost_model_dir = experiment.xgboost_model_dir
@@ -145,6 +147,7 @@ def run_xgboost():
     params = {
         'training_set': training_set,
         'test_set': test_set,
+        'validation_set': validation_set,
         'combined_set': combined_set,
         'experiment_mode': experiment_mode,
         'inference_option': inference_option,
@@ -152,9 +155,9 @@ def run_xgboost():
         'inference_combined_set': inference_combined_set,
         'inference_test_set': inference_test_set
     }
-    X_train, X_test, y_train, y_test = train_test_split(raw_smiles, route_lengths, test_size=0.2, y_regrouped=route_lengths_regrouped, params=params)
+    X_train, X_test, X_val, y_train, y_test, y_val = train_test_split(raw_smiles, route_lengths, test_size=0.1, val_size=0.1, y_regrouped=route_lengths_regrouped, params=params)
 
-    print(f"Performing {experiment_mode}. Train_test_split:\n X_train: ", len(X_train), ", X_test: ", len(X_test), ", y_train: ", len(y_train), ", y_test: ", len(y_test))
+    print(f"Performing {experiment_mode}. Train_test_split:\n X_train: ", len(X_train), ", X_test: ", len(X_test), ", X_val: ", len(X_val), ", y_train: ", len(y_train), ", y_test: ", len(y_test), ", y_val: ", len(y_val))
 
 
     # ECFP encoding

@@ -56,6 +56,18 @@ inference_name = ""
 inference_combined_set = ""
 inference_test_set = ""
 
+# params for ECFP encoding
+R = 3
+L = 2048
+use_features = True
+use_chirality = True
+
+# Evaluation metrics
+eval_metrics_multiclass = ["merror", "mlogloss"]
+eval_metrics_regression = ["error", "logloss"]
+metric_to_plot = ['error', 'logloss']
+
+
 def set_parameters(experiment: Experiment):
     global experiment_name, experiment_mode, results_dir, figures_dir, UNSOLVED_LENGTH, combined_set, training_set, test_set, validation_set, extract_file_from_hdf, xgboost_prediction, xgboost_model_dir, inference_option, inference_name, inference_combined_set, inference_test_set
 
@@ -75,6 +87,34 @@ def set_parameters(experiment: Experiment):
     inference_name = experiment.inference_name
     inference_combined_set = experiment.inference_combined_set
     inference_test_set = experiment.inference_test_set
+    
+
+def plot_learning_curves(experiment_mode, model, metrics, save_dir):
+    for metric in metrics:
+        loss_plot_path = figures_dir + experiment_name + "_xg_boost_" + experiment_mode + "_training_" + metric + "_plot.png"
+        fig, ax = plt.subplots()
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        results = model.evals_result()
+        # print("Results: ")
+
+        # def print_nested_keys(dictionary):
+        #     for key, value in dictionary.items():
+        #         print(key, ", length: ", len(value))
+        #         if isinstance(value, dict):
+        #             print_nested_keys(value)
+
+        # print_nested_keys(results)
+        
+        if experiment_mode == 'regression':  
+            ax.plot(results['validation_0'][metric], label='regression_train')
+            ax.plot(results['validation_1'][metric], label='regression_val')
+        else:
+            ax.plot(results['validation_0']['m' + metric], label='multiclass_train')
+            ax.plot(results['validation_1']['m' + metric], label='multiclass_val')
+        ax.legend()
+        plt.ylabel(metric)
+        plt.savefig(loss_plot_path)
 
 
 def run_xgboost():
@@ -164,6 +204,7 @@ def run_xgboost():
     feature_list = []
     feature_list_X_train = []
     feature_list_X_test = []
+    feature_list_X_val = []
     """
         Inputs:
         
@@ -177,10 +218,6 @@ def run_xgboost():
         - np.array(feature_list) ... ECFP with length L and maximum radius R
         """
     # Default Values from https://www.blopig.com/blog/2022/11/how-to-turn-a-smiles-string-into-an-extended-connectivity-fingerprint-using-rdkit/ 
-    R = 3
-    L = 2048
-    use_features = True
-    use_chirality = True
 
     # for i in range(len(raw_smiles)):
     #     molecule_encoded = AllChem.MolFromSmiles(raw_smiles[i])
@@ -194,6 +231,10 @@ def run_xgboost():
         molecule_encoded = AllChem.MolFromSmiles(X_test[i])
         feature_list_X_test.append(np.array(AllChem.GetMorganFingerprintAsBitVect(molecule_encoded, radius = R, nBits = L, useFeatures = use_features, useChirality = use_chirality)))
 
+    for i in range(len(X_val)):
+        molecule_encoded = AllChem.MolFromSmiles(X_val[i])
+        feature_list_X_val.append(np.array(AllChem.GetMorganFingerprintAsBitVect(molecule_encoded, radius = R, nBits = L, useFeatures = use_features, useChirality = use_chirality)))
+
 
     # print("Molecules encoded. Size of feature list: ", len(feature_list), len(feature_list[0]), feature_list[:5])
     print(f"Molecules encoded. X_train feature size: {np.array(feature_list_X_train).shape}; X_test feature size: {np.array(feature_list_X_test).shape}. Start fitting...")
@@ -203,8 +244,10 @@ def run_xgboost():
     X_train = np.array(feature_list_X_train)
     X_test_copy = np.array(X_test)
     X_test = np.array(feature_list_X_test)
+    X_val = np.array(feature_list_X_val)
     y_train = np.array(y_train)
     y_test = np.array(y_test)
+    y_val = np.array(y_val)
 
     # @TODO: This may need to be fixed: https://towardsdatascience.com/straightforward-stratification-bb0dcfcaf9ef 
     # also: https://github.com/aiqc/aiqc 
@@ -226,6 +269,8 @@ def run_xgboost():
     le = LabelEncoder()
     y_train = le.fit_transform(y_train)
 
+    eval_set = [(X_train, y_train), (X_val, y_val)]
+
     if experiment_mode == 'multiclass':
 
         if os.path.exists(xgboost_model_dir):
@@ -233,15 +278,14 @@ def run_xgboost():
             model = XGBClassifier()
             model.load_model(xgboost_model_dir)
         else:
-            model = XGBClassifier()
+            model = XGBClassifier(eval_metric=eval_metrics_multiclass)
             # model.fit(X_train, y_train, eval_set=[(X_test, y_test)])
-            model.fit(X_train, y_train, verbose=2)
+            model.fit(X_train, y_train, eval_set=eval_set, verbose=2)
             # model.fit(np.reshape(X_train, (-1, 1)), np.reshape(y_train, (-1, 1)), verbose=2)
             # model.fit(DMatrix(np.reshape(X_train, (-1, 1))), DMatrix(np.reshape(y_train, (-1, 1))), verbose=2)
             if not os.path.exists("xgboost/model"):
                 os.makedirs("xgboost/model")
-            model.save_model(xgboost_model_dir)
-            
+            model.save_model(xgboost_model_dir)    
             print(f"Fitting finished. Model saved to {xgboost_model_dir}. Calculating metrics in a different thread...")
 
         # cross validataion - this may lead to a segfault on large datasets for some reasons (https://github.com/dmlc/xgboost/issues/9369), so using multi-threading 
@@ -360,8 +404,8 @@ def run_xgboost():
             model = XGBRegressor()
             model.load_model(xgboost_model_dir)
         else:
-            model = XGBRegressor()
-            model.fit(X_train, y_train, verbose=2)
+            model = XGBRegressor(eval_metric=eval_metrics_regression)
+            model.fit(X_train, y_train, eval_set=eval_set, verbose=2)
             if not os.path.exists("xgboost/model"):
                 os.makedirs("xgboost/model")
             model.save_model(xgboost_model_dir)
@@ -377,6 +421,9 @@ def run_xgboost():
         print("R2 Score: ", metrics.r2_score(y_test, preds))
         print("Root Mean Squared Error: ", np.sqrt(metrics.mean_squared_error(y_test, preds)))
     
+    print("Plotting learning curves...")
+    plot_learning_curves(experiment_mode, model, metric_to_plot, figures_dir)
+
     print(f"================================================== Finished XGBoost experiment {experiment_name} {experiment_mode}... ==================================================")
 
 if __name__ == "__main__":

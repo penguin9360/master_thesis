@@ -14,7 +14,7 @@ inference_option = False
 inference_name = "50ktest2" # '1k', '10k', '50k' or '50ktest2', '200k'
 
 # enable/disable models
-enable_gnn = True
+enable_gnn = False
 enable_xgboost = True
 enable_regression = True
 enable_multiclass = True

@@ -12,3 +12,12 @@ docs/*
 task*
 *.csv
 *.hdf*
+aiz_data/
+experiment/results/
+experiment/splitted/
+experiment/result_extract/
+experiment/gnn/
+experiment/xgboost/
+experiment/slurm_output/
+experiment/figures/
+experiment/train_test/

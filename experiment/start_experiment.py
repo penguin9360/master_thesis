@@ -11,17 +11,37 @@ run_analysis = True
 NO_CUDA_OPTION = False
 
 inference_option = False
-inference_name = "50ktest2" # '1k', '10k', '50k' or '50ktest2', '200k'
+inference_name = "50k" # '1k', '10k', '50k' or '50ktest2', '200k'
 
 # enable/disable models
-enable_gnn = False
+enable_gnn = True
 enable_xgboost = True
 enable_regression = True
 enable_multiclass = True
 
 experiment_name = "1k" # '1k', '10k', '50k', or '50ktest2', '200k'
-cleanup = True
+cleanup = False
 cleanup_name = "1k" # 'All' or '1k', '10k', '50k', or '50ktest2', '200k'
+
+epochs = 150
+depth = 6
+# To pass params, gnn uses list, xgboost uses dict
+xgboost_model_param = {
+    "n_estimators": epochs, 
+    "max_depth": depth, 
+    # "learning_rate": 0.1, 
+    # "objective": 
+    # "reg:squarederror"
+    }
+
+gnn_model_param = [
+    "--epochs", str(epochs),
+    "--depth", str(depth),
+    # "hidden_size": 300, 
+    # "dropout": 0.0, 
+    # "batch_size": 32, 
+    # "num_workers": 0
+]
 
 if __name__ == "__main__":
     experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, inference_option, inference_name)
@@ -35,18 +55,18 @@ if __name__ == "__main__":
     if run_experiment:
         if enable_gnn:
             if enable_regression:
-                set_gnn_parameters(experiment_regression)
+                set_gnn_parameters(experiment_regression, gnn_model_param)
                 run_gnn()
             if enable_multiclass:
-                set_gnn_parameters(experiment_multiclass)
+                set_gnn_parameters(experiment_multiclass, gnn_model_param)
                 run_gnn()
         
         if enable_xgboost:
             if enable_regression:
-                set_xgboost_parameters(experiment_regression)
+                set_xgboost_parameters(experiment_regression, xgboost_model_param)
                 run_xgboost()
             if enable_multiclass:
-                set_xgboost_parameters(experiment_multiclass)
+                set_xgboost_parameters(experiment_multiclass, xgboost_model_param)
                 run_xgboost()
 
     # analysis

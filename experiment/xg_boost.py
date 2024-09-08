@@ -55,6 +55,8 @@ inference_option = ""
 inference_name = ""
 inference_combined_set = ""
 inference_test_set = ""
+model_parameters = {}
+tensorboard_log_dir = ""
 
 # params for ECFP encoding
 R = 3
@@ -68,8 +70,8 @@ eval_metrics_regression = ["error", "logloss"]
 metric_to_plot = ['error', 'logloss']
 
 
-def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, UNSOLVED_LENGTH, combined_set, training_set, test_set, validation_set, extract_file_from_hdf, xgboost_prediction, xgboost_model_dir, inference_option, inference_name, inference_combined_set, inference_test_set
+def set_parameters(experiment: Experiment, model_param: dict):
+    global experiment_name, experiment_mode, results_dir, figures_dir, UNSOLVED_LENGTH, combined_set, training_set, test_set, validation_set, extract_file_from_hdf, xgboost_prediction, xgboost_model_dir, inference_option, inference_name, inference_combined_set, inference_test_set, model_parameters, tensorboard_log_dir
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -87,9 +89,13 @@ def set_parameters(experiment: Experiment):
     inference_name = experiment.inference_name
     inference_combined_set = experiment.inference_combined_set
     inference_test_set = experiment.inference_test_set
+    model_parameters = model_param
+
+    # not sure if this is really necessary for xgboost
+    tensorboard_log_dir = "./xgboost/model/"
     
 
-def plot_learning_curves(experiment_mode, model, metrics, save_dir):
+def plot_xgboost_learning_curves(experiment_mode, model, metrics, save_dir):
     for metric in metrics:
         loss_plot_path = figures_dir + experiment_name + "_xg_boost_" + experiment_mode + "_training_" + metric + "_plot.png"
         fig, ax = plt.subplots()
@@ -189,11 +195,14 @@ def run_xgboost():
         'test_set': test_set,
         'validation_set': validation_set,
         'combined_set': combined_set,
+        'experiment_name': experiment_name,
         'experiment_mode': experiment_mode,
         'inference_option': inference_option,
         'inference_name': inference_name,
         'inference_combined_set': inference_combined_set,
-        'inference_test_set': inference_test_set
+        'inference_test_set': inference_test_set,
+        'figures_dir': figures_dir,
+        'algorithm': 'xgboost',
     }
     X_train, X_test, X_val, y_train, y_test, y_val = train_test_split(raw_smiles, route_lengths, test_size=0.1, val_size=0.1, y_regrouped=route_lengths_regrouped, params=params)
 
@@ -241,13 +250,14 @@ def run_xgboost():
 
     # # fit with XGBoost Classifier 
     # X, y = np.array(feature_list), np.array(route_lengths_regrouped)
-    X_train = np.array(feature_list_X_train)
-    X_test_copy = np.array(X_test)
-    X_test = np.array(feature_list_X_test)
-    X_val = np.array(feature_list_X_val)
-    y_train = np.array(y_train)
-    y_test = np.array(y_test)
-    y_val = np.array(y_val)
+    # added dtype=object to avoid "Unicode-2 is not supported" error
+    X_train = np.array(feature_list_X_train, dtype=object)
+    X_test_copy = np.array(X_test, dtype=object)
+    X_test = np.array(feature_list_X_test, dtype=object)
+    X_val = np.array(feature_list_X_val, dtype=object)
+    y_train = np.array(y_train, dtype=float)
+    y_test = np.array(y_test, dtype=float)
+    y_val = np.array(y_val, dtype=float)
 
     # @TODO: This may need to be fixed: https://towardsdatascience.com/straightforward-stratification-bb0dcfcaf9ef 
     # also: https://github.com/aiqc/aiqc 
@@ -278,7 +288,7 @@ def run_xgboost():
             model = XGBClassifier()
             model.load_model(xgboost_model_dir)
         else:
-            model = XGBClassifier(eval_metric=eval_metrics_multiclass)
+            model = XGBClassifier(eval_metric=eval_metrics_multiclass, n_estimators=model_parameters['n_estimators'], max_depth=model_parameters['max_depth'])
             # model.fit(X_train, y_train, eval_set=[(X_test, y_test)])
             model.fit(X_train, y_train, eval_set=eval_set, verbose=2)
             # model.fit(np.reshape(X_train, (-1, 1)), np.reshape(y_train, (-1, 1)), verbose=2)
@@ -312,7 +322,7 @@ def run_xgboost():
 
         # inverse transfrom from the LabelEncoder magic
         preds = le.inverse_transform(preds)
-
+        preds = np.array(preds, dtype=float)
         print("Classification Report: \n", metrics.classification_report(y_test, preds))
 
         categories = ['unsolved', '1-2', '3-5', '6+']
@@ -404,7 +414,7 @@ def run_xgboost():
             model = XGBRegressor()
             model.load_model(xgboost_model_dir)
         else:
-            model = XGBRegressor(eval_metric=eval_metrics_regression)
+            model = XGBRegressor(eval_metric=eval_metrics_regression, n_estimators=model_parameters['n_estimators'], max_depth=model_parameters['max_depth'])
             model.fit(X_train, y_train, eval_set=eval_set, verbose=2)
             if not os.path.exists("xgboost/model"):
                 os.makedirs("xgboost/model")
@@ -422,7 +432,7 @@ def run_xgboost():
         print("Root Mean Squared Error: ", np.sqrt(metrics.mean_squared_error(y_test, preds)))
     
     print("Plotting learning curves...")
-    plot_learning_curves(experiment_mode, model, metric_to_plot, figures_dir)
+    plot_xgboost_learning_curves(experiment_mode, model, metric_to_plot, figures_dir)
 
     print(f"================================================== Finished XGBoost experiment {experiment_name} {experiment_mode}... ==================================================")
 

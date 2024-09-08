@@ -76,7 +76,7 @@ class Experiment:
                                 print(f"File {file_path} removed.")
                         for d in dirs:
                             if name in d:
-                                if str(d).split(name)[-1] == '':
+                                if str(d).split(name)[-1] == '' or 'model' in root or 'figures' in root or 'train_test' in root:
                                     dir_path = os.path.join(root, d)
                                     shutil.rmtree(dir_path, ignore_errors=True)
                                     print(f"Directory {dir_path} removed.")

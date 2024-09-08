@@ -5,8 +5,9 @@ import pandas as pd
 import numpy as np
 import csv
 import chemprop
-from helpers import train_test_split, get_files_in_directory, is_empty_folder
+from helpers import train_test_split, get_files_in_directory, is_empty_folder, plot_tensorboard_learning_curves
 from experiment_config import Experiment
+import argparse
 
 experiment_name = ""
 experiment_mode = ""
@@ -25,10 +26,12 @@ inference_combined_set = ""
 inference_test_set = ""
 UNSOLVED_LENGTH = 0
 NO_CUDA_OPTION = True
+model_parameters = []
+tensorboard_log_dir = ""
 
 
-def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, combined_set, training_set, test_set, validation_set, chemprop_prediction, chemprop_model_dir, extract_file_from_hdf, UNSOLVED_LENGTH, NO_CUDA_OPTION, inference_option, inference_name, inference_combined_set, inference_test_set
+def set_parameters(experiment: Experiment, model_param: list):
+    global experiment_name, experiment_mode, results_dir, figures_dir, combined_set, training_set, test_set, validation_set, chemprop_prediction, chemprop_model_dir, extract_file_from_hdf, UNSOLVED_LENGTH, NO_CUDA_OPTION, inference_option, inference_name, inference_combined_set, inference_test_set, model_parameters, tensorboard_log_dir
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -47,6 +50,25 @@ def set_parameters(experiment: Experiment):
     inference_name = experiment.inference_name
     inference_combined_set = experiment.inference_combined_set
     inference_test_set = experiment.inference_test_set
+    model_parameters = model_param
+
+    tensorboard_log_dir = "./gnn/model/" + experiment_name + "_" + experiment_mode + "/fold_0/model_0" + "/"
+
+
+def plot_gnn_learning_curves():
+    for f in get_files_in_directory(tensorboard_log_dir):
+        if '.pt' in f:
+            continue
+        print(f)
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--logdir', default=f, type=str, help='logdir to event file')
+        parser.add_argument('--smooth', default=25, type=float, help='window size for average smoothing')
+        parser.add_argument('--color', default='#4169E1', type=str, help='HTML code for the figure')
+
+        args = parser.parse_args()
+        params = vars(args)
+
+        plot_tensorboard_learning_curves(params)
 
 
 def run_gnn():
@@ -119,11 +141,14 @@ def run_gnn():
         'test_set': test_set,
         'validation_set': validation_set,
         'combined_set': combined_set,
+        'experiment_name': experiment_name,
         'experiment_mode': experiment_mode,
         'inference_option': inference_option,
         'inference_name': inference_name,
         'inference_combined_set': inference_combined_set,
-        'inference_test_set': inference_test_set
+        'inference_test_set': inference_test_set, 
+        'figures_dir': figures_dir,
+        'algorithm': "gnn",
     }
 
     X_train, X_test, X_val, y_train, y_test, y_val = train_test_split(raw_smiles, route_lengths, test_size=0.1, val_size=0.1, y_regrouped=route_lengths_regrouped, params=params)
@@ -147,6 +172,11 @@ def run_gnn():
             ]
         if NO_CUDA_OPTION:
             training_arguments.append('--no_cuda')
+
+        training_arguments_with_validation = ["--separate_val_path", validation_set, "--separate_test_path", test_set]
+        training_arguments += training_arguments_with_validation
+        training_arguments += model_parameters
+        
         args = chemprop.args.TrainArgs().parse_args(training_arguments)
         mean_score, std_score = chemprop.train.cross_validate(args=args, train_func=chemprop.train.run_training)
         print("Chemprop training score: \nMean: ", mean_score, " | std: ", std_score)
@@ -163,6 +193,11 @@ def run_gnn():
     preds = chemprop.train.make_predictions(args=args)
 
     print("Predictions completed. Writing to file ", chemprop_prediction)
+
+    print("Plotting GNN learning curves...")
+    print(f"files in tensorboard dir {tensorboard_log_dir}: ", get_files_in_directory(tensorboard_log_dir))
+    plot_gnn_learning_curves()
+
     print(f"================================================== Finished GNN experiment {experiment_name} {experiment_mode}... ==================================================")
 
 

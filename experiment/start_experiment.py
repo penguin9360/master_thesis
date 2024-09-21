@@ -11,7 +11,7 @@ run_analysis = True
 NO_CUDA_OPTION = False
 
 inference_option = False
-inference_name = "50k" # '1k', '10k', '50k' or '50ktest2', '200k'
+inference_name = "200k" # '1k', '10k', '50k' or '50ktest2', '200k'
 
 # enable/disable models
 enable_gnn = True

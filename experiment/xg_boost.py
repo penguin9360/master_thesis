@@ -431,8 +431,9 @@ def run_xgboost():
         print("R2 Score: ", metrics.r2_score(y_test, preds))
         print("Root Mean Squared Error: ", np.sqrt(metrics.mean_squared_error(y_test, preds)))
     
-    print("Plotting learning curves...")
-    plot_xgboost_learning_curves(experiment_mode, model, metric_to_plot, figures_dir)
+    if not inference_option:
+        print("Plotting learning curves...")
+        plot_xgboost_learning_curves(experiment_mode, model, metric_to_plot, figures_dir)
 
     print(f"================================================== Finished XGBoost experiment {experiment_name} {experiment_mode}... ==================================================")
 

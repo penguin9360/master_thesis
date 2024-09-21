@@ -194,9 +194,10 @@ def run_gnn():
 
     print("Predictions completed. Writing to file ", chemprop_prediction)
 
-    print("Plotting GNN learning curves...")
-    print(f"files in tensorboard dir {tensorboard_log_dir}: ", get_files_in_directory(tensorboard_log_dir))
-    plot_gnn_learning_curves()
+    if not inference_option:
+        print("Plotting GNN learning curves...")
+        print(f"files in tensorboard dir {tensorboard_log_dir}: ", get_files_in_directory(tensorboard_log_dir))
+        plot_gnn_learning_curves()
 
     print(f"================================================== Finished GNN experiment {experiment_name} {experiment_mode}... ==================================================")
 

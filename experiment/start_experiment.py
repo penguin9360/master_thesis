@@ -6,7 +6,7 @@ from xg_boost_result_analysis import run_xg_boost_result_analysis, set_parameter
 from experiment_config import Experiment
 
 # experiment parameters - run_experiment must be set to True to run any experiments. Same for run_analysis. 
-run_experiment = True
+run_experiment = False
 run_analysis = True
 NO_CUDA_OPTION = False
 

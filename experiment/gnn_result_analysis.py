@@ -47,7 +47,8 @@ def make_box_plot(df, metrics: list):
     sns.boxplot(x=df['route_length_truth'], y=df['route_length_predicted'], showfliers=False)
     plt.xlabel('True Route Length')
     plt.ylabel('Predicted Route Length')
-    plt.title(box_plot_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
+    # plt.title(box_plot_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
+    plt.title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
     if not os.path.exists(os.path.dirname(box_plot_path)):
         os.makedirs(os.path.dirname(box_plot_path))
     plt.savefig(box_plot_path)
@@ -64,7 +65,8 @@ def make_reg_plot(df, metrics: list):
     sns.regplot(x=df['route_length_truth'], y=df['route_length_predicted'])
     plt.xlabel('True Route Length')
     plt.ylabel('Predicted Route Length')
-    plt.title(table_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
+    # plt.title(table_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
+    plt.title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
     if not os.path.exists(os.path.dirname(table_path)):
         os.makedirs(os.path.dirname(table_path))
     plt.savefig(table_path)
@@ -136,7 +138,8 @@ def run_gnn_result_analysis():
             os.makedirs(plot_dir)
         
         print(f"plotting {matrix_plot_title}...")
-        make_confusion_matrix(confusion_matrix_test, categories=categories, figsize=(15, 15), title=matrix_plot_title, filename=matrix_plot_path)
+        # make_confusion_matrix(confusion_matrix_test, categories=categories, figsize=(15, 15), title=matrix_plot_title, filename=matrix_plot_path)
+        make_confusion_matrix(confusion_matrix_test, categories=categories, figsize=(15, 15), filename=matrix_plot_path)
 
         recall = metrics.recall_score(y_true=df['route_length'], y_pred=df['max_predicted_class'], average='weighted')
         f1_score = metrics.f1_score(y_true=df['route_length'], y_pred=df['max_predicted_class'], average='weighted')
@@ -161,7 +164,7 @@ def run_gnn_result_analysis():
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
         metrics_text = f"Recall: {recall:.2f}, F1 Score: {f1_score:.2f}, AUC ROC: {auc_roc:.2f}, Average Precision: {average_precision:.2f}, MCC: {mcc_score:.2f}, Accuracy: {accuracy:.2f}"
-        plt.title(roc_graph_title+'\n' + metrics_text)
+        # plt.title(roc_graph_title+'\n' + metrics_text)
         plt.legend(loc='lower right')
         plt.savefig(roc_graph_path)
 
@@ -183,7 +186,7 @@ def run_gnn_result_analysis():
             table[0, i].set_facecolor('grey')
         for i in range(len(classification_table)):
             table[i + 1, 0].set_facecolor('lightgrey')
-        plt.title(table_title, y=0.8)  # Adjust the value of 'y' to reduce the distance between the title and the table
+        # plt.title(table_title, y=0.8)  # Adjust the value of 'y' to reduce the distance between the title and the table
         plt.savefig(table_path)
 
     if experiment_mode == 'regression':

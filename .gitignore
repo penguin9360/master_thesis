@@ -11,6 +11,7 @@ docs/*
 .github/
 task*
 *.csv
+*.txt
 *.hdf*
 aiz_data/
 experiment/results/

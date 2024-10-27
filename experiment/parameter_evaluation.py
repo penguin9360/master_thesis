@@ -12,13 +12,11 @@ from email.mime.multipart import MIMEMultipart
 NO_CUDA_OPTION = False
 
 enable_regression = True
-enable_multiclass = False
+enable_multiclass = True
 
 experiment_name = "1k" # '1k', '10k', '50k'
 num_evals = 50
 
-# To run in background for long HPO experiments:
-# nohup python parameter_evaluation.py >/dev/null 2>&1 &
 
 # pre-selected values
 # epochs = 150
@@ -90,13 +88,16 @@ def objective(params):
     if NO_CUDA_OPTION:
         training_arguments.append('--no_cuda')
 
+    if experiment_mode == 'multiclass':
+        training_arguments += ['--multiclass_num_classes', '4']
+
     args = chemprop.args.TrainArgs().parse_args(training_arguments)
     mean_score, std_score = cross_validate(args=args, train_func=run_training)
     print("Mean score:", mean_score, " | std score:", std_score)
     return mean_score
 
 
-def run_hpo(num_evals):
+def run_hpo(num_evals, best_param_log_name):
     print(f"================================================== Starting GNN HPO experiment {experiment_name} {experiment_mode}, num_evals = {num_evals}... ==================================================")
     trials = Trials()
     best = fmin(
@@ -114,58 +115,38 @@ def run_hpo(num_evals):
         "batch_size": batch_size_set[best['batch_size']],
     }
     print("Best hyperparameters:", best_hyperparams)
-    current_time = datetime.now().strftime("%Y%m%d_%H%M")
-    best_param_log_name = hpo_folder + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
-    if not os.path.exists(hpo_folder):
-        os.makedirs(hpo_folder)
-    with open(best_param_log_name, 'w') as f:
-        f.write(f"num_evals: {num_evals}\n\n")
+    
+    finish_time = datetime.now().strftime("%Y%m%d_%H%M")
+    
+    with open(best_param_log_name, 'a') as f:
+        f.write(f"finished at {finish_time}\n\n")
         for key, value in best_hyperparams.items():
             f.write(f"{key}: {value}\n")
     print(f"================================================== Finished GNN HPO experiment {experiment_name} {experiment_mode}... ==================================================")
 
 
-def send_email(subject, body, to_email):
-        from_email = "zp531@yahoo.com"
-        from_password = "4L9JgH%.77#?!Dw"
-
-        msg = MIMEMultipart()
-        msg['From'] = from_email
-        msg['To'] = to_email
-        msg['Subject'] = subject
-
-        msg.attach(MIMEText(body, 'plain'))
-
-        try:
-            server = smtplib.SMTP('smtp.mail.yahoo.com', 587)
-            server.starttls()
-            server.login(from_email, from_password)
-            text = msg.as_string()
-            server.sendmail(from_email, to_email, text)
-            server.quit()
-            print("Email sent successfully")
-        except Exception as e:
-            print(f"Failed to send email: {e}")
-
-
-
-
 if __name__ == "__main__":
+    if not os.path.exists(hpo_folder):
+        os.makedirs(hpo_folder)
     experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, False, "")
     experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, False, "")
-
+    
     if enable_regression:
+        current_time = datetime.now().strftime("%Y%m%d_%H%M")
         set_experiment_params(experiment_regression)
-        run_hpo(num_evals)
+        best_param_log_name = hpo_folder + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
+        with open(best_param_log_name, 'w') as f:
+            f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals} \n started at {current_time}\n\n")
+        run_hpo(num_evals, best_param_log_name)
 
     if enable_multiclass:
+        current_time = datetime.now().strftime("%Y%m%d_%H%M")
         set_experiment_params(experiment_multiclass)
-        run_hpo(num_evals)
+        best_param_log_name = hpo_folder + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
+        with open(best_param_log_name, 'w') as f:
+            f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals} \n started at {current_time}\n\n")
+        run_hpo(num_evals, best_param_log_name)
 
-    # subject = "[ALICE Leiden University job completion notice] GNN HPO Experiment Completed"
-    # body = f"The GNN HPO experiment {experiment_name} {experiment_mode} num_evals = {num_evals} has completed."
-    # to_email = "s2917211@vuw.leidenuniv.nl"
-    # send_email(subject, body, to_email)
 
     
 

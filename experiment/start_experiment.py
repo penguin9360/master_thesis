@@ -13,7 +13,7 @@ NO_CUDA_OPTION = False
 # Note that currently only GNN HPO is supported. 
 # If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated.
 slurm_hpo_option = True
-num_evals = 1
+num_evals = 50
 hpo_slurm_file = "hpo.slurm"
 
 # these flags are to choose which evaluation sets will be used for inference
@@ -26,7 +26,7 @@ enable_xgboost = True
 enable_regression = True
 enable_multiclass = True
 
-experiment_name = "1k" # '1k', '10k', '50k'
+experiment_name = "50k" # '1k', '10k', '50k'
 cleanup = False
 cleanup_name = "1k" # 'All' or '1k', '10k', '50k'
 

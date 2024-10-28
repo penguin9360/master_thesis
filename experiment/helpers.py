@@ -33,7 +33,7 @@ def replace_line(file_name, line_num, text):
 def write_hpo_slurm_file(hpo_slurm_file, experiment_name, experiment_mode):
     slurm_job_name = f"#SBATCH --job-name=HPO_{experiment_name}\n" # line 2
     if experiment_name == "50k":
-        slurm_partition = "#SBATCH --partition=\"gpu-medium\"\n" # line 3
+        slurm_partition = "#SBATCH --partition=\"gpu-long\"\n" # line 3
         slurm_time = "#SBATCH --time=7-00:00:00\n" # line 4
     else:
         slurm_partition = "#SBATCH --partition=\"gpu-medium\"\n" # line 3

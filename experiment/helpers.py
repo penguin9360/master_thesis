@@ -21,6 +21,33 @@ inference_test_set = ""
 figures_dir = ""
 algorithm = ""
 
+
+def replace_line(file_name, line_num, text):
+    lines = open(file_name, 'r').readlines()
+    lines[line_num - 1] = text
+    out = open(file_name, 'w')
+    out.writelines(lines)
+    out.close()
+
+
+def write_hpo_slurm_file(hpo_slurm_file, experiment_name, experiment_mode):
+    slurm_job_name = f"#SBATCH --job-name=HPO_{experiment_name}\n" # line 2
+    if experiment_name == "50k":
+        slurm_partition = "#SBATCH --partition=\"gpu-medium\"\n" # line 3
+        slurm_time = "#SBATCH --time=7-00:00:00\n" # line 4
+    else:
+        slurm_partition = "#SBATCH --partition=\"gpu-medium\"\n" # line 3
+        slurm_time = "#SBATCH --time=1-00:00:00\n" # line 4
+    slurm_output = f"#SBATCH --output=slurm_output/hpo/HPO_{experiment_name}_%A.out\n" # line 9
+
+    replace_line(hpo_slurm_file, 2, slurm_job_name)
+    replace_line(hpo_slurm_file, 3, slurm_partition)
+    replace_line(hpo_slurm_file, 4, slurm_time)
+    replace_line(hpo_slurm_file, 9, slurm_output)
+    print(f"================================================== GNN HPO slurm file written for {experiment_name} {experiment_mode} ==================================================")
+    print("Please use the command 'sbatch hpo.slurm' to run the GNN HPO experiment.")
+
+
 def check_and_remove_duplicates(X_train, X_test, y_train, y_test):
     # X_train_set = set(X_train)
     # y_train_set = set(y_train)

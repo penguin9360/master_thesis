@@ -4,19 +4,9 @@ import chemprop
 from chemprop.train import cross_validate, run_training
 import os
 from datetime import datetime
-import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
-# experiment parameters - run_experiment must be set to True to run any experiments. Same for run_analysis. 
-NO_CUDA_OPTION = False
-
-enable_regression = True
-enable_multiclass = True
-
-experiment_name = "1k" # '1k', '10k', '50k'
-num_evals = 50
-
+from start_experiment import enable_regression, enable_multiclass, experiment_name, num_evals, NO_CUDA_OPTION
 
 # pre-selected values
 # epochs = 150
@@ -24,7 +14,6 @@ num_evals = 50
 # init_lr = 0.0001
 # max_lr = 0.001
 # batch_size = 64
-
 
 # --batch-size Batch size (default 64)
 # --message-hidden-dim <n> Hidden dimension of the messages in the MPNN (default 300)
@@ -42,7 +31,6 @@ depth_set = [3, 5, 6, 7, 9]
 init_lr_set = [0.00005, 0.000075, 0.0001, 0.000125, 0.00015]
 max_lr_set = [0.0005, 0.00075, 0.001, 0.00125, 0.0015]
 batch_size_set = [32, 48, 64, 80, 96]
-
 
 hyper_params = {
     "epochs": hp.choice("epochs", epochs_set),

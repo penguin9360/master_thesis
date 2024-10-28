@@ -2,7 +2,7 @@ from gnn import run_gnn, set_parameters as set_gnn_parameters
 from xg_boost import run_xgboost, set_parameters as set_xgboost_parameters
 from gnn_result_analysis import run_gnn_result_analysis, set_parameters as set_gnn_analysis_parameters
 from xg_boost_result_analysis import run_xg_boost_result_analysis, set_parameters as set_xg_boost_analysis_parameters
-
+from helpers import write_hpo_slurm_file
 from experiment_config import Experiment
 
 # experiment parameters - run_experiment must be set to True to run any experiments. Same for run_analysis. 
@@ -10,8 +10,15 @@ run_experiment = False
 run_analysis = True
 NO_CUDA_OPTION = False
 
+# Note that currently only GNN HPO is supported. 
+# If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated.
+slurm_hpo_option = True
+num_evals = 1
+hpo_slurm_file = "hpo.slurm"
+
+# these flags are to choose which evaluation sets will be used for inference
 inference_option = False
-inference_name = "200k" # '1k', '10k', '50k' or '50ktest2', '200k'
+inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # enable/disable models
 enable_gnn = True
@@ -19,9 +26,9 @@ enable_xgboost = True
 enable_regression = True
 enable_multiclass = True
 
-experiment_name = "1k" # '1k', '10k', '50k', or '50ktest2', '200k'
+experiment_name = "1k" # '1k', '10k', '50k'
 cleanup = False
-cleanup_name = "1k" # 'All' or '1k', '10k', '50k', or '50ktest2', '200k'
+cleanup_name = "1k" # 'All' or '1k', '10k', '50k'
 
 epochs = 150
 depth = 6
@@ -50,9 +57,15 @@ if __name__ == "__main__":
     if cleanup:
         # doesn't matter which instance we use, as the parameters are the same
         experiment_multiclass.cleanup(cleanup_name)
+    
+    if slurm_hpo_option:
+        if enable_regression:
+            write_hpo_slurm_file(hpo_slurm_file=hpo_slurm_file, experiment_name=experiment_name, experiment_mode='regression')
+        if enable_multiclass:
+            write_hpo_slurm_file(hpo_slurm_file=hpo_slurm_file, experiment_name=experiment_name, experiment_mode='multiclass')
 
     # experiment 
-    if run_experiment:
+    if run_experiment and not slurm_hpo_option:
         if enable_gnn:
             if enable_regression:
                 set_gnn_parameters(experiment_regression, gnn_model_param)
@@ -70,7 +83,7 @@ if __name__ == "__main__":
                 run_xgboost()
 
     # analysis
-    if run_analysis:
+    if run_analysis and not slurm_hpo_option:
         if enable_gnn:
             if enable_regression:
                 set_gnn_analysis_parameters(experiment_regression)

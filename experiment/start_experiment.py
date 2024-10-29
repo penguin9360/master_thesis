@@ -6,13 +6,13 @@ from helpers import write_hpo_slurm_file
 from experiment_config import Experiment
 
 # experiment parameters - run_experiment must be set to True to run any experiments. Same for run_analysis. 
-run_experiment = False
+run_experiment = True
 run_analysis = True
 NO_CUDA_OPTION = False
 
 # Note that currently only GNN HPO is supported. 
 # If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated.
-slurm_hpo_option = True
+slurm_hpo_option = False
 num_evals = 50
 hpo_slurm_file = "hpo.slurm"
 
@@ -22,13 +22,16 @@ inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # enable/disable models
 enable_gnn = True
-enable_xgboost = True
+enable_xgboost = False
 enable_regression = True
 enable_multiclass = True
 
 experiment_name = "50k" # '1k', '10k', '50k'
 cleanup = False
 cleanup_name = "1k" # 'All' or '1k', '10k', '50k'
+
+# make sure to toggle this flag to retrain with optimal params
+retrain_gnn_with_optimal_param = True
 
 epochs = 150
 depth = 6
@@ -50,6 +53,23 @@ gnn_model_param = [
     # "num_workers": 0
 ]
 
+# params from HPO
+gnn_optimal_param_multiclass = [ # based on 1k HPO
+    "--epochs", "50",
+    "--depth", "5",
+    "--init_lr", "0.00005",
+    "--max_lr", "0.001",
+    "--batch_size", "96",
+]
+
+gnn_optimal_param_regression = [ # based on 1k HPO
+    "--epochs", "150",
+    "--depth", "7",
+    "--init_lr", "0.000075",
+    "--max_lr", "0.0015",
+    "--batch_size", "48",
+]
+
 if __name__ == "__main__":
     experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, inference_option, inference_name)
     experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, inference_option, inference_name)
@@ -68,9 +88,13 @@ if __name__ == "__main__":
     if run_experiment and not slurm_hpo_option:
         if enable_gnn:
             if enable_regression:
+                if retrain_gnn_with_optimal_param:
+                    gnn_model_param = gnn_optimal_param_regression
                 set_gnn_parameters(experiment_regression, gnn_model_param)
                 run_gnn()
             if enable_multiclass:
+                if retrain_gnn_with_optimal_param:
+                    gnn_model_param = gnn_optimal_param_multiclass
                 set_gnn_parameters(experiment_multiclass, gnn_model_param)
                 run_gnn()
         

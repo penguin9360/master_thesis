@@ -1,0 +1,10 @@
+experiment name: 1k, mode: multiclass, num_evals: 50 
+ started at 20241028_0356
+
+finished at 20241028_0653
+
+epochs: 50
+depth: 5
+init_lr: 5e-05
+max_lr: 0.001
+batch_size: 96

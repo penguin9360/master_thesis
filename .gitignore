@@ -11,7 +11,6 @@ docs/*
 .github/
 task*
 *.csv
-*.txt
 *.hdf*
 aiz_data/
 experiment/results/
@@ -20,6 +19,7 @@ experiment/result_extract/
 experiment/gnn/
 experiment/xgboost/
 experiment/slurm_output/
-experiment/figures/
+experiment/figures*/
 experiment/train_test/
+experiment/archive/
 *access_token*

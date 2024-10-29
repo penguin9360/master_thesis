@@ -3,7 +3,7 @@
 #SBATCH --partition="gpu-long"
 #SBATCH --time=7-00:00:00
 #SBATCH --ntasks=1
-#SBATCH --mem=75GB
+#SBATCH --mem=50GB
 #SBATCH --mail-user="s2917211@vuw.leidenuniv.nl"
 #SBATCH --mail-type="ALL"
 #SBATCH --output=slurm_output/hpo/HPO_10k_%A.out

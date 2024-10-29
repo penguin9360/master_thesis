@@ -1,0 +1,10 @@
+experiment name: 1k, mode: regression, num_evals: 50 
+ started at 20241028_0034
+
+finished at 20241028_0356
+
+epochs: 150
+depth: 7
+init_lr: 7.5e-05
+max_lr: 0.0015
+batch_size: 48

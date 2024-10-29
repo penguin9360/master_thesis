@@ -1,0 +1,3 @@
+experiment name: 50k, mode: regression, num_evals: 50 
+ started at 20241028_1121
+

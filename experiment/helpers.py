@@ -2,6 +2,8 @@ import os
 import csv
 import random
 import pandas as pd
+import numpy as np
+from experiment_config import Experiment
 
 from tensorboard.backend.event_processing import event_accumulator as ea
 from matplotlib import pyplot as plt
@@ -20,6 +22,25 @@ inference_combined_set = ""
 inference_test_set = ""
 figures_dir = ""
 algorithm = ""
+
+
+def set_parameters(experiment: Experiment):
+    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, xgboost_prediction, test_set, df, inference_option, inference_name
+
+    experiment_name = experiment.experiment_name
+    experiment_mode = experiment.experiment_mode
+    results_dir = experiment.results_dir
+    figures_dir = experiment.figures_dir
+    file_name = experiment.chemprop_prediction
+    test_file = experiment.test_set
+    xgboost_prediction = experiment.xgboost_prediction
+    test_set = experiment.test_set
+    inference_option = experiment.inference_option
+    inference_name = experiment.inference_name
+    df = pd.read_csv(xgboost_prediction)
+
+    if inference_option:
+        experiment_name += "_inference_" + inference_name
 
 
 def replace_line(file_name, line_num, text):
@@ -282,3 +303,182 @@ def plot_tensorboard_learning_curves(params):
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)
     plt.savefig(plot_file)
+
+
+def make_box_plot(df, metrics: list, algorithm):
+    rmse, mae, r_squared = metrics[0:3]
+    box_plot_path = figures_dir + experiment_name + "_" + algorithm + "_" + experiment_mode + "_box_plot.png"
+    box_plot_title = experiment_name + "_" + algorithm + "_" + experiment_mode + "_box_plot"
+    print(f"plotting {box_plot_title}...")
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot([0, 10], [0, 10], '--', lw=1, color='lightgrey', zorder=1)
+    sns.boxplot(
+        x=df['route_length_truth'],
+        y=df['route_length_predicted'],
+        showfliers=False,
+        zorder=2,
+        ax=ax
+    )
+    ax.set_xlim(-0.5, 10.5)
+    ax.set_ylim(-3.9, 10.9)
+    ax.set_xlabel('True Route Length', fontsize=14)
+    ax.set_ylabel('Predicted Route Length', fontsize=14)
+    ax.set_title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}", fontsize=14)
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    print(f"Saving box plot to {box_plot_path}")
+    os.makedirs(os.path.dirname(box_plot_path), exist_ok=True)
+    plt.savefig(box_plot_path)
+
+
+def make_reg_plot(df, metrics: list, algorithm):
+    rmse, mae, r_squared = metrics[0:3]
+    reg_plot_path = figures_dir + experiment_name + "_" + algorithm + "_" + experiment_mode + "_regression_plot.png"
+    reg_plot_title = experiment_name + "_" + algorithm + "_" + experiment_mode + "_regression_plot"
+        
+    print(f"plotting {reg_plot_title}...")
+        
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot([0, 10], [0, 10], '--', lw=1, color='lightgrey')
+    sns.regplot(
+        x=df['route_length_truth'],
+        y=df['route_length_predicted'],
+        ax=ax
+    )
+    ax.set_xlim(-0.5, 10.5)
+    ax.set_ylim(-3.9, 10.9)
+    ax.set_xlabel('True Route Length', fontsize=14)
+    ax.set_ylabel('Predicted Route Length', fontsize=14)
+    # plt.title(reg_plot_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
+    ax.set_title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}", fontsize=14)
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    os.makedirs(os.path.dirname(reg_plot_path), exist_ok=True)
+    plt.savefig(reg_plot_path)
+
+
+# Confusion matrix plotter obtained from: https://github.com/DTrimarchi10/confusion_matrix/blob/master/cf_matrix.py
+def make_confusion_matrix(cf,
+                          group_names=None,
+                          categories='auto',
+                          count=True,
+                          percent=True,
+                          cbar=True,
+                          xyticks=True,
+                          xyplotlabels=True,
+                          sum_stats=True,
+                          figsize=None,
+                          cmap='Blues',
+                          title=None,
+                          filename=None,
+                          fontsize=20):  # Add a new parameter for fontsize
+    '''
+    This function will make a pretty plot of an sklearn Confusion Matrix cm using a Seaborn heatmap visualization.
+
+    Arguments
+    ---------
+    cf:            confusion matrix to be passed in
+
+    group_names:   List of strings that represent the labels row by row to be shown in each square.
+
+    categories:    List of strings containing the categories to be displayed on the x,y axis. Default is 'auto'
+
+    count:         If True, show the raw number in the confusion matrix. Default is True.
+
+    normalize:     If True, show the proportions for each category. Default is True.
+
+    cbar:          If True, show the color bar. The cbar values are based off the values in the confusion matrix.
+                   Default is True.
+
+    xyticks:       If True, show x and y ticks. Default is True.
+
+    xyplotlabels:  If True, show 'True Label' and 'Predicted Label' on the figure. Default is True.
+
+    sum_stats:     If True, display summary statistics below the figure. Default is True.
+
+    figsize:       Tuple representing the figure size. Default will be the matplotlib rcParams value.
+
+    cmap:          Colormap of the values displayed from matplotlib.pyplot.cm. Default is 'Blues'
+                   See http://matplotlib.org/examples/color/colormaps_reference.html
+                   
+    title:         Title for the heatmap. Default is None.
+    
+    fontsize:      Font size for the text inside each square. Default is 12.
+
+    '''
+
+
+    # CODE TO GENERATE TEXT INSIDE EACH SQUARE
+    blanks = ['' for i in range(cf.size)]
+
+    if group_names and len(group_names)==cf.size:
+        group_labels = ["{}\n".format(value) for value in group_names]
+    else:
+        group_labels = blanks
+
+    if count:
+        group_counts = ["{0:0.0f}\n".format(value) for value in cf.flatten()]
+    else:
+        group_counts = blanks
+
+    if percent:
+        group_percentages = ["{0:.2%}".format(value) for value in cf.flatten()/np.sum(cf)]
+    else:
+        group_percentages = blanks
+
+    box_labels = [f"{v1}{v2}{v3}".strip() for v1, v2, v3 in zip(group_labels,group_counts,group_percentages)]
+    box_labels = np.asarray(box_labels).reshape(cf.shape[0],cf.shape[1])
+
+
+    # CODE TO GENERATE SUMMARY STATISTICS & TEXT FOR SUMMARY STATS
+    if sum_stats:
+        #Accuracy is sum of diagonal divided by total observations
+        accuracy  = np.trace(cf) / float(np.sum(cf))
+
+        #if it is a binary confusion matrix, show some more stats
+        if len(cf)==2:
+            #Metrics for Binary Confusion Matrices
+            precision = cf[1,1] / sum(cf[:,1])
+            recall    = cf[1,1] / sum(cf[1,:])
+            f1_score  = 2*precision*recall / (precision + recall)
+            stats_text = "\n\nAccuracy={:0.3f}\nPrecision={:0.3f}\nRecall={:0.3f}\nF1 Score={:0.3f}".format(
+                accuracy,precision,recall,f1_score)
+        else:
+            stats_text = "\n\nAccuracy={:0.3f}".format(accuracy)
+    else:
+        stats_text = ""
+
+
+    # SET FIGURE PARAMETERS ACCORDING TO OTHER ARGUMENTS
+    if figsize==None:
+        #Get default figure size if not set
+        figsize = plt.rcParams.get('figure.figsize')
+
+    if xyticks==False:
+        #Do not show categories if xyticks is False
+        categories=False
+
+
+    # MAKE THE HEATMAP VISUALIZATION
+    plt.figure(figsize=figsize)
+    cf_heatmap = sns.heatmap(cf,annot=box_labels,fmt="",cmap=cmap,cbar=cbar,xticklabels=categories,yticklabels=categories,annot_kws={"size": fontsize})
+    cf_heatmap.set_xticklabels(cf_heatmap.get_xticklabels(), fontsize=fontsize)
+    cf_heatmap.set_yticklabels(cf_heatmap.get_yticklabels(), fontsize=fontsize)
+
+    # Obtain the cbar object from the heatmap
+    cbar_obj = cf_heatmap.collections[0].colorbar
+
+    # Now you can modify the cbar object, for example, setting the font size of its labels
+    cbar_obj.ax.tick_params(labelsize=fontsize) 
+
+    fig = cf_heatmap.get_figure()
+
+    if xyplotlabels:
+        plt.ylabel('True label', fontdict={'fontsize': fontsize}, labelpad=fontsize)  # Set font size for y-axis label
+        plt.xlabel('Predicted label' + stats_text, fontdict={'fontsize': fontsize}, labelpad=fontsize)  # Set font size for x-axis label
+    else:
+        plt.xlabel(stats_text, fontdict={'fontsize': fontsize}, labelpad=fontsize)  # Set font size for x-axis label
+    
+    if title:
+        plt.title(title, fontdict={'fontsize': fontsize * 1.5}, pad=fontsize)  # Set font size for title
+
+    if filename is not None:
+        fig.savefig(filename)

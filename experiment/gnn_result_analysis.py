@@ -1,15 +1,14 @@
 import os
-from confusion_matrix_plotter import make_confusion_matrix
 import pandas as pd
 from sklearn import metrics
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, average_precision_score, roc_curve, auc, mean_absolute_error, r2_score
+from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, average_precision_score, roc_curve, auc, mean_absolute_error, r2_score, mean_squared_error
 from sklearn import metrics
 from sklearn.preprocessing import label_binarize
-from sklearn.metrics import mean_squared_error
 import numpy as np
 import matplotlib.pyplot as plt
 from experiment_config import Experiment
+from helpers import make_box_plot, make_reg_plot, make_confusion_matrix
 
 experiment_name = ""
 experiment_mode = "" 
@@ -34,42 +33,6 @@ def calculate_regression_metrics(df):
     print("R-squared:", r_squared)
 
     return [rmse, mae, r_squared]
-
-
-def make_box_plot(df, metrics: list):
-    rmse, mae, r_squared = metrics[0:3]
-    box_plot_path = figures_dir + experiment_name + "_gnn_" + experiment_mode + "_box_plot.png"
-    box_plot_title = experiment_name + "_gnn_" + experiment_mode + "_box_plot"
-        
-    print(f"plotting {box_plot_title}...")
-        
-    plt.figure(figsize=(8, 6))
-    sns.boxplot(x=df['route_length_truth'], y=df['route_length_predicted'], showfliers=False)
-    plt.xlabel('True Route Length')
-    plt.ylabel('Predicted Route Length')
-    # plt.title(box_plot_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
-    plt.title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
-    if not os.path.exists(os.path.dirname(box_plot_path)):
-        os.makedirs(os.path.dirname(box_plot_path))
-    plt.savefig(box_plot_path)
-
-
-def make_reg_plot(df, metrics: list):
-    rmse, mae, r_squared = metrics[0:3]
-    table_path = figures_dir + experiment_name + "_gnn_" + experiment_mode + "_regression_plot.png"
-    table_title = experiment_name + "_gnn_" + experiment_mode + "_regression_plot"
-        
-    print(f"creating regression table {table_title}...")
-        
-    plt.figure(figsize=(8, 6))
-    sns.regplot(x=df['route_length_truth'], y=df['route_length_predicted'])
-    plt.xlabel('True Route Length')
-    plt.ylabel('Predicted Route Length')
-    # plt.title(table_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
-    plt.title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
-    if not os.path.exists(os.path.dirname(table_path)):
-        os.makedirs(os.path.dirname(table_path))
-    plt.savefig(table_path)
 
 
 def calculate_confusion_matrix_values(y_true, y_pred):
@@ -105,6 +68,39 @@ def set_parameters(experiment: Experiment):
 # 1. 1-2 steps
 # 2. 3-5 steps
 # 3. 6+ steps
+
+
+def calculate_multiclass_metrics(df):
+    recall = metrics.recall_score(y_pred=df['route_length'], y_true=df['route_length_truth'], average='weighted')
+    f1_score = metrics.f1_score(y_pred=df['route_length'], y_true=df['route_length_truth'], average='weighted')
+    mcc_score = metrics.matthews_corrcoef(y_pred=df['route_length'], y_true=df['route_length_truth'])
+    accuracy = metrics.accuracy_score(y_pred=df['route_length'], y_true=df['route_length_truth'])
+    tn, fp, fn, tp = calculate_confusion_matrix_values(y_pred=df['route_length'], y_true=df['route_length_truth'])
+
+    y_true_binary = label_binarize(df['route_length'], classes=[0, 1, 2, 3])
+    y_pred_binary = label_binarize(df['route_length_truth'], classes=[0, 1, 2, 3])
+
+    average_precision = metrics.average_precision_score(y_true=y_true_binary, y_score=y_pred_binary, average='weighted')
+    fpr, tpr, thresholds = metrics.roc_curve(y_true=y_true_binary.ravel(), y_score=y_pred_binary.ravel())
+    auc_roc = metrics.auc(fpr, tpr)
+
+    metrics_dict = {
+        "recall": recall,
+        "f1_score": f1_score,
+        "mcc_score": mcc_score,
+        "accuracy": accuracy,
+        "tn": tn,
+        "fp": fp,
+        "fn": fn,
+        "tp": tp,
+        "average_precision": average_precision,
+        "fpr": fpr,
+        "tpr": tpr,
+        "thresholds": thresholds,
+        "auc_roc": auc_roc
+    }
+    return metrics_dict
+
 
 def run_gnn_result_analysis():
     df2 = pd.read_csv(test_set)
@@ -194,8 +190,8 @@ def run_gnn_result_analysis():
         
         regression_metrics = calculate_regression_metrics(df)
 
-        make_box_plot(df, regression_metrics)
-        make_reg_plot(df, regression_metrics)
+        make_box_plot(df, regression_metrics, "gnn")
+        make_reg_plot(df, regression_metrics, "gnn")
 
     print(f"================================================== Finished GNN Result Analysis for {experiment_name} {experiment_mode}... ==================================================")
 

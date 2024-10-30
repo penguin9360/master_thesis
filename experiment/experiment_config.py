@@ -58,7 +58,7 @@ class Experiment:
             self.xgboost_prediction = "./xgboost/data/" + self.experiment_name+ "_inference_" + self.inference_name + "_" + self.experiment_mode + "_prediction"
             
 
-        
+
     def cleanup(self, name):
         if name == "All":   
             for directory in self.cleanable_directories:

@@ -1,3 +1,10 @@
 experiment name: 10k, mode: regression, num_evals: 50 
  started at 20241029_1645
 
+finished at 20241031_0549
+
+epochs: 200
+depth: 3
+init_lr: 0.0001
+max_lr: 0.00125
+batch_size: 96

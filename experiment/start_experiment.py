@@ -54,21 +54,38 @@ gnn_model_param = [
 ]
 
 # params from HPO
-gnn_optimal_param_multiclass = [ # based on 1k HPO
-    "--epochs", "50",
-    "--depth", "5",
+# gnn_optimal_param_multiclass = [ # based on 1k HPO
+#     "--epochs", "50",
+#     "--depth", "5",
+#     "--init_lr", "0.00005",
+#     "--max_lr", "0.001",
+#     "--batch_size", "96",
+# ]
+
+gnn_optimal_param_multiclass = [ # based on 10k HPO
+    "--epochs", "250",
+    "--depth", "7",
     "--init_lr", "0.00005",
-    "--max_lr", "0.001",
+    "--max_lr", "0.00075",
+    "--batch_size", "64",
+]
+
+# gnn_optimal_param_regression = [ # based on 1k HPO
+#     "--epochs", "150",
+#     "--depth", "7",
+#     "--init_lr", "0.000075",
+#     "--max_lr", "0.0015",
+#     "--batch_size", "48",
+# ]
+
+gnn_optimal_param_regression = [ # based on 10k HPO
+    "--epochs", "200",
+    "--depth", "3",
+    "--init_lr", "0.0001",
+    "--max_lr", "0.00125",
     "--batch_size", "96",
 ]
 
-gnn_optimal_param_regression = [ # based on 1k HPO
-    "--epochs", "150",
-    "--depth", "7",
-    "--init_lr", "0.000075",
-    "--max_lr", "0.0015",
-    "--batch_size", "48",
-]
 
 if __name__ == "__main__":
     experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, inference_option, inference_name)

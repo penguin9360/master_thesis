@@ -298,17 +298,25 @@ def run_xgboost():
             model.save_model(xgboost_model_dir)    
             print(f"Fitting finished. Model saved to {xgboost_model_dir}. Calculating metrics in a different thread...")
 
+        '''
+         ====================================================================================================================================
+            it works but it's not necessary
+        '''
         # cross validataion - this may lead to a segfault on large datasets for some reasons (https://github.com/dmlc/xgboost/issues/9369), so using multi-threading 
-        def calculate_metrics(model, X_train, y_train):
-            scores = cross_val_score(model, X_train, y_train, cv=5)
-            print("Mean cross-validation score: %.2f" % scores.mean())
+        
+        # def calculate_metrics(model, X_train, y_train):
+        #     scores = cross_val_score(model, X_train, y_train, cv=5)
+        #     print("Mean cross-validation score: %.2f" % scores.mean())
+        #     kfold = KFold(n_splits=10, shuffle=True)
+        #     kf_cv_scores = cross_val_score(model, X_train, y_train, cv=kfold )
+        #     print("K-fold CV average score: %.2f" % kf_cv_scores.mean())
 
-            kfold = KFold(n_splits=10, shuffle=True)
-            kf_cv_scores = cross_val_score(model, X_train, y_train, cv=kfold )
-            print("K-fold CV average score: %.2f" % kf_cv_scores.mean())
+        # calc_metric_thread = threading.Thread(target=calculate_metrics, name="metrics", args=[model, X_train, y_train])
+        # calc_metric_thread.start()
 
-        calc_metric_thread = threading.Thread(target=calculate_metrics, name="metrics", args=[model, X_train, y_train])
-        calc_metric_thread.start()
+        '''
+         ====================================================================================================================================
+        '''
 
         preds = model.predict(X_test)
         # print("Checking if metric calculation thread is still alive: ", calc_metric_thread.is_alive())
@@ -343,9 +351,17 @@ def run_xgboost():
         # nclass_classification_mosaic_plot(n_classes=len(confusion_matrix_test.tolist()), results=confusion_matrix_test.tolist(), filename=plot_file_prefix + "_mosaic.png", title=plot_title_prefix + "_mosaic")
         # nclass_classification_mosaic_plot(n_classes=len(confusion_matrix_train.tolist()), results=confusion_matrix_train.tolist(), filename=figures_dir + experiment_name + "_mosaic_train.png")
 
-        if calc_metric_thread.is_alive():
-            print("Main thread execution finished but metric calculation is not finished yet. Waiting for it to finish...")
-            calc_metric_thread.join()
+
+        '''
+         ====================================================================================================================================
+            it works but it's not necessary
+        '''
+        # if calc_metric_thread.is_alive():
+        #     print("Main thread execution finished but metric calculation is not finished yet. Waiting for it to finish...")
+        #     calc_metric_thread.join()
+        '''
+         ====================================================================================================================================
+        '''
 
 
         # mean, std = preds.loc, preds.scale

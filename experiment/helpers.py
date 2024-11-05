@@ -37,7 +37,6 @@ def set_parameters(experiment: Experiment):
     test_set = experiment.test_set
     inference_option = experiment.inference_option
     inference_name = experiment.inference_name
-    df = pd.read_csv(xgboost_prediction)
 
     if inference_option:
         experiment_name += "_inference_" + inference_name
@@ -246,8 +245,6 @@ def is_empty_folder(path):
 
 # modified and improved based on: https://github.com/chingyaoc/Tensorboard2Seaborn/blob/master/beautify.py
 def plot_tensorboard_learning_curves(params):
-  ''' beautify tf log
-      Use better library (seaborn) to plot tf event file'''
   print(f"plotting learning curves for {algorithm} {experiment_name} {experiment_mode}", "params: ", params)
   sns.set_theme(style="darkgrid")
   sns.set_context("paper")
@@ -270,7 +267,8 @@ def plot_tensorboard_learning_curves(params):
     # if 'param' in tag:
     #   for s in acc.Scalars(tag):
     #     print(f"s.step: {s.step}, s.value: {s.value}")
-    x = [int(s.step) for s in acc.Scalars(tag)]
+    steps_per_epoch = params.get('steps_per_epoch', 1)
+    x = [int(s.step) // steps_per_epoch for s in acc.Scalars(tag)] !!!!!!!!!
     y = [s.value for s in acc.Scalars(tag)]
 
     # smooth curve
@@ -298,7 +296,10 @@ def plot_tensorboard_learning_curves(params):
       plt.title(scalar_list[i])  
       plt.plot(x_list_raw[i], y_list_raw[i], color=colors.to_rgba(color_code, alpha=0.4))
       plt.plot(x_list[i], y_list[i], color=color_code, linewidth=1.5)
-    
+      plt.xlabel('Epoch')
+    if 'train_loss' in tag:
+        plt.ylim(0, 1.5)
+
     plot_file = figures_dir + experiment_name + '_' + algorithm + '_' + experiment_mode + '_' + tag + '.png'
     if not os.path.exists(figures_dir):
         os.makedirs(figures_dir)

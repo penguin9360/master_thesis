@@ -6,23 +6,23 @@ from helpers import write_hpo_slurm_file, set_parameters as set_helper_parameter
 from experiment_config import Experiment
 
 # experiment parameters - run_experiment must be set to True to run any experiments. Same for run_analysis. 
-run_experiment = False
-run_analysis = True
+run_experiment = True
+run_analysis = False
 NO_CUDA_OPTION = False
 
 # Note that currently only GNN HPO is supported. 
 # If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated.
-slurm_hpo_option = True
-num_evals = 1
+slurm_hpo_option = False
+num_evals = 20
 hpo_slurm_file = "hpo.slurm"
 
 # these flags are to choose which evaluation sets will be used for inference
 inference_option = False
-inference_name = "50k" # '1k', '10k', '50k', '200k'
+inference_name = "10k" # '1k', '10k', '50k', '200k'
 
 # enable/disable models
 enable_gnn = True
-enable_xgboost = False
+enable_xgboost = True
 enable_regression = True
 enable_multiclass = True
 

@@ -47,10 +47,12 @@ validation_set = ""
 chemprop_model_dir = ""
 NO_CUDA_OPTION = False
 hpo_folder = "hpo/"
+hpo_logs = ""
+hpo_models = ""
 
 
-def set_experiment_params(experiment: Experiment):
-    global experiment_name, experiment_mode, training_set, test_set, validation_set, chemprop_model_dir, NO_CUDA_OPTION
+def set_experiment_params(experiment: Experiment, current_time):
+    global experiment_name, experiment_mode, training_set, test_set, validation_set, chemprop_model_dir, NO_CUDA_OPTION, hpo_folder, hpo_logs, hpo_models
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -60,6 +62,14 @@ def set_experiment_params(experiment: Experiment):
     chemprop_model_dir = experiment.chemprop_model_dir
     NO_CUDA_OPTION = experiment.NO_CUDA_OPTION
 
+    hpo_folder = "hpo/" + experiment_name + "/" + experiment_mode + "/"
+    hpo_logs = hpo_folder + "logs/"
+    hpo_models = hpo_folder + "models/" + current_time + "/"
+    if not os.path.exists(hpo_logs):
+        os.makedirs(hpo_logs)
+    if not os.path.exists(hpo_models):
+        os.makedirs(hpo_models)
+
 
 def objective(params):
     training_arguments = [
@@ -68,7 +78,7 @@ def objective(params):
         '--init_lr', str(params['init_lr']),
         '--max_lr', str(params['max_lr']),
         '--batch_size', str(params['batch_size']),
-        '--save_dir', chemprop_model_dir + "_hpo",
+        '--save_dir',  hpo_models,
         '--data_path', training_set,
         '--separate_val_path', validation_set,
         '--dataset_type', experiment_mode,
@@ -114,23 +124,21 @@ def run_hpo(num_evals, best_param_log_name):
 
 
 if __name__ == "__main__":
-    if not os.path.exists(hpo_folder):
-        os.makedirs(hpo_folder)
     experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, False, "")
     experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, False, "")
     
     if enable_regression:
         current_time = datetime.now().strftime("%Y%m%d_%H%M")
-        set_experiment_params(experiment_regression)
-        best_param_log_name = hpo_folder + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
+        set_experiment_params(experiment_regression, current_time)
+        best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
         with open(best_param_log_name, 'w') as f:
             f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals} \n started at {current_time}\n\n")
         run_hpo(num_evals, best_param_log_name)
 
     if enable_multiclass:
         current_time = datetime.now().strftime("%Y%m%d_%H%M")
-        set_experiment_params(experiment_multiclass)
-        best_param_log_name = hpo_folder + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
+        set_experiment_params(experiment_multiclass, current_time)
+        best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
         with open(best_param_log_name, 'w') as f:
             f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals} \n started at {current_time}\n\n")
         run_hpo(num_evals, best_param_log_name)

@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=HPO_1k_multiclass_random_3
-#SBATCH --partition="gpu-medium"
-#SBATCH --time=1-00:00:00
+#SBATCH --job-name=HPO_50k_multiclass_random_35
+#SBATCH --partition="gpu-long"
+#SBATCH --time=7-00:00:00
 #SBATCH --ntasks=1
 #SBATCH --mem=50GB
 #SBATCH --mail-user="s2917211@vuw.leidenuniv.nl"
 #SBATCH --mail-type="ALL"
-#SBATCH --output=slurm_output/hpo/HPO_1k_multiclass_random_3_%A.out
+#SBATCH --output=slurm_output/hpo/HPO_50k_multiclass_random_35_%A.out
 #SBATCH --gres=gpu:1
 
 source activate aizynth-dev

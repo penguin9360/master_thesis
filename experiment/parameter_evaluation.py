@@ -44,16 +44,16 @@ max_lr_set = [0.00075, 0.001, 0.00125]
 batch_size_set = [48, 64, 96]
 
 # boundaries for random search
-lower_epochs = 10
-upper_epochs = 50
-lower_depth = 2
-upper_depth = 10
-lower_init_lr = 1e-5
-upper_init_lr = 1e-3
-lower_max_lr = 1e-3
-upper_max_lr = 1e-1
-lower_batch_size = 16
-upper_batch_size = 128
+lower_epochs = 50
+upper_epochs = 250
+lower_depth = 3
+upper_depth = 9
+lower_init_lr = 0.00005
+upper_init_lr = 0.00015
+lower_max_lr = 0.00075
+upper_max_lr = 0.00125
+lower_batch_size = 48
+upper_batch_size = 96
 
 hyper_params = {}
 if search_option == "grid":

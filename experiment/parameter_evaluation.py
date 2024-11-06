@@ -26,11 +26,18 @@ from start_experiment import enable_regression, enable_multiclass, experiment_na
 # --max-lr <n> Maximum learning rate (default 0.001)
 # --final-lr <n> Final learning rate (default 0.0001)
 
-epochs_set = [50, 100, 150, 200, 250]
-depth_set = [3, 5, 6, 7, 9]
-init_lr_set = [0.00005, 0.000075, 0.0001, 0.000125, 0.00015]
-max_lr_set = [0.0005, 0.00075, 0.001, 0.00125, 0.0015]
-batch_size_set = [32, 48, 64, 80, 96]
+# epochs_set = [50, 100, 150, 200, 250]
+# depth_set = [3, 5, 6, 7, 9]
+# init_lr_set = [0.00005, 0.000075, 0.0001, 0.000125, 0.00015]
+# max_lr_set = [0.0005, 0.00075, 0.001, 0.00125, 0.0015]
+# batch_size_set = [32, 48, 64, 80, 96]
+
+# reduced search space for 50k
+epochs_set = [50, 200, 250]
+depth_set = [3, 7, 9]
+init_lr_set = [0.00005, 0.000075, 0.0001]
+max_lr_set = [0.00075, 0.001, 0.00125]
+batch_size_set = [48, 64, 96]
 
 hyper_params = {
     "epochs": hp.choice("epochs", epochs_set),
@@ -49,10 +56,11 @@ NO_CUDA_OPTION = False
 hpo_folder = "hpo/"
 hpo_logs = ""
 hpo_models = ""
+graph_format_options = {}
 
 
 def set_experiment_params(experiment: Experiment, current_time):
-    global experiment_name, experiment_mode, training_set, test_set, validation_set, chemprop_model_dir, NO_CUDA_OPTION, hpo_folder, hpo_logs, hpo_models
+    global experiment_name, experiment_mode, training_set, test_set, validation_set, chemprop_model_dir, NO_CUDA_OPTION, hpo_folder, hpo_logs, hpo_models, graph_format_options
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -124,8 +132,8 @@ def run_hpo(num_evals, best_param_log_name):
 
 
 if __name__ == "__main__":
-    experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, False, "")
-    experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, False, "")
+    experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, False, "", graph_format_options)
+    experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, False, "", graph_format_options)
     
     if enable_regression:
         current_time = datetime.now().strftime("%Y%m%d_%H%M")

@@ -17,7 +17,7 @@ from xgboost_distribution import XGBDistribution
 from xgboost import XGBClassifier, XGBRegressor, DMatrix
 
 from collections import Counter
-from helpers import train_test_split, get_files_in_directory, is_empty_folder
+from helpers import train_test_split, get_files_in_directory, is_empty_folder, plot_xgboost_learning_curves
 from experiment_config import Experiment
 # from xg_boost_result_analysis import plot_residuals
 # from confusion_matrix_plotter import make_confusion_matrix
@@ -57,6 +57,7 @@ inference_combined_set = ""
 inference_test_set = ""
 model_parameters = {}
 tensorboard_log_dir = ""
+graph_format_options = {}
 
 # params for ECFP encoding
 R = 3
@@ -71,7 +72,7 @@ metric_to_plot = ['error', 'logloss']
 
 
 def set_parameters(experiment: Experiment, model_param: dict):
-    global experiment_name, experiment_mode, results_dir, figures_dir, UNSOLVED_LENGTH, combined_set, training_set, test_set, validation_set, extract_file_from_hdf, xgboost_prediction, xgboost_model_dir, inference_option, inference_name, inference_combined_set, inference_test_set, model_parameters, tensorboard_log_dir
+    global experiment_name, experiment_mode, results_dir, figures_dir, UNSOLVED_LENGTH, combined_set, training_set, test_set, validation_set, extract_file_from_hdf, xgboost_prediction, xgboost_model_dir, inference_option, inference_name, inference_combined_set, inference_test_set, model_parameters, tensorboard_log_dir, graph_format_options
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -90,38 +91,11 @@ def set_parameters(experiment: Experiment, model_param: dict):
     inference_combined_set = experiment.inference_combined_set
     inference_test_set = experiment.inference_test_set
     model_parameters = model_param
+    graph_format_options = experiment.graph_format_options
 
     # not sure if this is really necessary for xgboost
     tensorboard_log_dir = "./xgboost/model/"
     
-
-def plot_xgboost_learning_curves(experiment_mode, model, metrics, save_dir):
-    for metric in metrics:
-        loss_plot_path = figures_dir + experiment_name + "_xg_boost_" + experiment_mode + "_training_" + metric + "_plot.png"
-        fig, ax = plt.subplots()
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        results = model.evals_result()
-        # print("Results: ")
-
-        # def print_nested_keys(dictionary):
-        #     for key, value in dictionary.items():
-        #         print(key, ", length: ", len(value))
-        #         if isinstance(value, dict):
-        #             print_nested_keys(value)
-
-        # print_nested_keys(results)
-        
-        if experiment_mode == 'regression':  
-            ax.plot(results['validation_0'][metric], label='regression_train')
-            ax.plot(results['validation_1'][metric], label='regression_val')
-        else:
-            ax.plot(results['validation_0']['m' + metric], label='multiclass_train')
-            ax.plot(results['validation_1']['m' + metric], label='multiclass_val')
-        ax.legend()
-        plt.ylabel(metric)
-        plt.savefig(loss_plot_path)
-
 
 def run_xgboost():
     # ================================================================== PROGRAM STARTS HERE ===================================================================
@@ -449,7 +423,7 @@ def run_xgboost():
     
     if not inference_option:
         print("Plotting learning curves...")
-        plot_xgboost_learning_curves(experiment_mode, model, metric_to_plot, figures_dir)
+        plot_xgboost_learning_curves(experiment_mode, model, metric_to_plot, figures_dir, epochs=model_parameters['n_estimators'])
 
     print(f"================================================== Finished XGBoost experiment {experiment_name} {experiment_mode}... ==================================================")
 

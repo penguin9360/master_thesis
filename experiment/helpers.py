@@ -22,10 +22,11 @@ inference_combined_set = ""
 inference_test_set = ""
 figures_dir = ""
 algorithm = ""
+graph_format_options = {}
 
 
 def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, xgboost_prediction, test_set, df, inference_option, inference_name
+    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, xgboost_prediction, test_set, inference_option, inference_name, graph_format_options
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -37,6 +38,7 @@ def set_parameters(experiment: Experiment):
     test_set = experiment.test_set
     inference_option = experiment.inference_option
     inference_name = experiment.inference_name
+    graph_format_options = experiment.graph_format_options
 
     if inference_option:
         experiment_name += "_inference_" + inference_name
@@ -243,9 +245,82 @@ def is_empty_folder(path):
         return True
     
 
+def plot_xgboost_learning_curves(experiment_mode, model, metrics, save_dir, epochs):
+    smooth_space = 5
+    
+    for metric in metrics:
+        loss_plot_path = figures_dir + experiment_name + "_xg_boost_" + experiment_mode + "_training_" + metric + "_plot.png"
+        fig, ax = plt.subplots(figsize=graph_format_options['default_plot_size'])
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        results = model.evals_result()
+        
+        if experiment_mode == 'regression':
+            # Get raw values
+            y_raw = results['validation_0'][metric]
+            x_raw = list(range(len(y_raw)))
+            
+            # Calculate smooth curve
+            x_smooth = []
+            y_smooth = []
+            for i in range(0, len(x_raw), smooth_space):
+                if i + smooth_space >= len(x_raw):
+                    x_smooth.append(x_raw[-1])
+                    y_smooth.append(y_raw[-1])
+                else:
+                    x_smooth.append(x_raw[i])
+                    y_smooth.append(sum(y_raw[i:i+smooth_space]) / float(smooth_space))
+            
+            # Plot both raw and smooth curves
+            ax.plot(x_raw, y_raw, color='blue', alpha=0.4, label='regression_train_raw')
+            ax.plot(x_smooth, y_smooth, color='blue', linewidth=1.5, label='regression_train_smooth')
+        else:
+            # Get raw values
+            y_raw = results['validation_0']['m' + metric]
+            x_raw = list(range(len(y_raw)))
+            
+            # Calculate smooth curve
+            x_smooth = []
+            y_smooth = []
+            for i in range(0, len(x_raw), smooth_space):
+                if i + smooth_space >= len(x_raw):
+                    x_smooth.append(x_raw[-1])
+                    y_smooth.append(y_raw[-1])
+                else:
+                    x_smooth.append(x_raw[i])
+                    y_smooth.append(sum(y_raw[i:i+smooth_space]) / float(smooth_space))
+            
+            # Plot both raw and smooth curves
+            ax.plot(x_raw, y_raw, color='blue', alpha=0.4, label='multiclass_train_raw')
+            ax.plot(x_smooth, y_smooth, color='blue', linewidth=1.5, label='multiclass_train_smooth')
+        
+        plt.ylabel(metric, fontsize=graph_format_options['label_font_size'])
+        plt.xlabel(graph_format_options['training_graph_xlabel'], fontsize=graph_format_options['label_font_size'])
+
+        if 'logloss' in metric:
+            if experiment_mode == 'multiclass':
+                plt.ylim(graph_format_options['train_loss_ylim'])
+            if experiment_mode == 'regression':
+                plt.ylim(-110, -70)
+
+        # tick magic
+        x_positions = np.linspace(0, epochs, graph_format_options['training_graph_num_xticks'])  
+        x_labels = [f"{int(e)}" for e in x_positions]
+        y_min, y_max = plt.ylim()
+        y_ticks = np.linspace(y_min, y_max, graph_format_options['training_graph_num_yticks'])
+        plt.yticks(y_ticks)
+        plt.xticks(x_positions, x_labels, fontsize=graph_format_options['tick_font_size'])
+        plt.grid(True, color=graph_format_options['grid_color'])
+        plt.gca().set_facecolor(graph_format_options['training_graph_background_color'])
+        plt.yticks(fontsize=graph_format_options['tick_font_size'], rotation=graph_format_options['training_graph_ytick_rotation'])
+
+        plt.savefig(loss_plot_path)
+
+
 # modified and improved based on: https://github.com/chingyaoc/Tensorboard2Seaborn/blob/master/beautify.py
-def plot_tensorboard_learning_curves(params):
-  print(f"plotting learning curves for {algorithm} {experiment_name} {experiment_mode}", "params: ", params)
+def plot_tensorboard_learning_curves(params, epochs):
+  print(f"plotting learning curves for {algorithm} {experiment_name} {experiment_mode}", "params: ", params, "epochs: ", epochs)
+  epochs = int(epochs)
   sns.set_theme(style="darkgrid")
   sns.set_context("paper")
   log_path = params['logdir']
@@ -262,14 +337,15 @@ def plot_tensorboard_learning_curves(params):
   y_list = []
   x_list_raw = []
   y_list_raw = []
+  total_steps = 0
   for tag in scalar_list:
     # print("tag: ", tag)
     # if 'param' in tag:
     #   for s in acc.Scalars(tag):
     #     print(f"s.step: {s.step}, s.value: {s.value}")
-    steps_per_epoch = params.get('steps_per_epoch', 1)
-    x = [int(s.step) // steps_per_epoch for s in acc.Scalars(tag)] !!!!!!!!!
+    x = [int(s.step) for s in acc.Scalars(tag)]
     y = [s.value for s in acc.Scalars(tag)]
+    total_steps = max(total_steps, x[-1])
 
     # smooth curve
     x_ = []
@@ -290,15 +366,30 @@ def plot_tensorboard_learning_curves(params):
     
     # fig, ax = plt.subplots()
     for i in range(len(x_list)):
-      plt.figure(i)
-      plt.clf()
-      plt.subplot(111)
-      plt.title(scalar_list[i])  
-      plt.plot(x_list_raw[i], y_list_raw[i], color=colors.to_rgba(color_code, alpha=0.4))
-      plt.plot(x_list[i], y_list[i], color=color_code, linewidth=1.5)
-      plt.xlabel('Epoch')
+        plt.figure(i, figsize=graph_format_options['default_plot_size'])
+        plt.clf()
+        plt.subplot(111)
+        plt.plot(x_list_raw[i], y_list_raw[i], color=colors.to_rgba(color_code, alpha=0.4))
+        plt.plot(x_list[i], y_list[i], color=color_code, linewidth=1.5)
+        plt.xlabel(graph_format_options['training_graph_xlabel'], fontsize=graph_format_options['label_font_size'])
+        plt.ylabel(scalar_list[i], fontsize=graph_format_options['label_font_size'])
     if 'train_loss' in tag:
-        plt.ylim(0, 1.5)
+        plt.ylim(graph_format_options['train_loss_ylim'])
+        plt.axhline(y=0, color='lightgrey', linestyle='--', zorder=1)
+    if 'learning_rate' in tag:
+        plt.gca().yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
+        plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    
+    # tick magic to convert xaxis numbers from steps to epochs
+    num_ticks = graph_format_options['training_graph_num_xticks']
+    x_steps = np.linspace(0, total_steps, num_ticks)
+    x_epochs = np.linspace(0, epochs, num_ticks)
+    
+    y_min, y_max = plt.ylim()
+    y_ticks = np.linspace(y_min, y_max, num_ticks)
+    plt.yticks(y_ticks)
+    plt.xticks(x_steps, [f"{int(e)}" for e in x_epochs], fontsize=graph_format_options["tick_font_size"])
+    plt.yticks(fontsize=graph_format_options["tick_font_size"], rotation=graph_format_options['training_graph_ytick_rotation'])
 
     plot_file = figures_dir + experiment_name + '_' + algorithm + '_' + experiment_mode + '_' + tag + '.png'
     if not os.path.exists(figures_dir):
@@ -311,7 +402,7 @@ def make_box_plot(df, metrics: list, algorithm):
     box_plot_path = figures_dir + experiment_name + "_" + algorithm + "_" + experiment_mode + "_box_plot.png"
     box_plot_title = experiment_name + "_" + algorithm + "_" + experiment_mode + "_box_plot"
     print(f"plotting {box_plot_title}...")
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=graph_format_options['default_plot_size'])
     ax.plot([0, 10], [0, 10], '--', lw=1, color='lightgrey', zorder=1)
     sns.boxplot(
         x=df['route_length_truth'],
@@ -320,12 +411,12 @@ def make_box_plot(df, metrics: list, algorithm):
         zorder=2,
         ax=ax
     )
-    ax.set_xlim(-0.5, 10.5)
-    ax.set_ylim(-3.9, 10.9)
-    ax.set_xlabel('True Route Length', fontsize=14)
-    ax.set_ylabel('Predicted Route Length', fontsize=14)
-    ax.set_title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}", fontsize=14)
-    ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.set_xlim(graph_format_options['box_plot_xlim'])
+    ax.set_ylim(graph_format_options['box_plot_ylim'])
+    ax.set_xlabel('True Route Length', fontsize=graph_format_options['label_font_size'])
+    ax.set_ylabel('Predicted Route Length', fontsize=graph_format_options['label_font_size'])
+    ax.set_title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}", fontsize=graph_format_options['label_font_size'])
+    ax.tick_params(axis='both', which='major', labelsize=graph_format_options['tick_font_size'])
     print(f"Saving box plot to {box_plot_path}")
     os.makedirs(os.path.dirname(box_plot_path), exist_ok=True)
     plt.savefig(box_plot_path)
@@ -338,20 +429,20 @@ def make_reg_plot(df, metrics: list, algorithm):
         
     print(f"plotting {reg_plot_title}...")
         
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=graph_format_options['default_plot_size'])
     ax.plot([0, 10], [0, 10], '--', lw=1, color='lightgrey')
     sns.regplot(
         x=df['route_length_truth'],
         y=df['route_length_predicted'],
         ax=ax
     )
-    ax.set_xlim(-0.5, 10.5)
-    ax.set_ylim(-3.9, 10.9)
-    ax.set_xlabel('True Route Length', fontsize=14)
-    ax.set_ylabel('Predicted Route Length', fontsize=14)
+    ax.set_xlim(graph_format_options['box_plot_xlim'])
+    ax.set_ylim(graph_format_options['box_plot_ylim'])
+    ax.set_xlabel('True Route Length', fontsize=graph_format_options['label_font_size'])
+    ax.set_ylabel('Predicted Route Length', fontsize=graph_format_options['label_font_size'])
     # plt.title(reg_plot_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
-    ax.set_title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}", fontsize=14)
-    ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.set_title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}", fontsize=graph_format_options['label_font_size'])
+    ax.tick_params(axis='both', which='major', labelsize=graph_format_options['tick_font_size'])
     os.makedirs(os.path.dirname(reg_plot_path), exist_ok=True)
     plt.savefig(reg_plot_path)
 
@@ -370,7 +461,7 @@ def make_confusion_matrix(cf,
                           cmap='Blues',
                           title=None,
                           filename=None,
-                          fontsize=20):  # Add a new parameter for fontsize
+                          fontsize=20): 
     '''
     This function will make a pretty plot of an sklearn Confusion Matrix cm using a Seaborn heatmap visualization.
 

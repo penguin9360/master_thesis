@@ -6,8 +6,8 @@ from helpers import write_hpo_slurm_file, set_parameters as set_helper_parameter
 from experiment_config import Experiment
 
 # experiment parameters - run_experiment must be set to True to run any experiments. Same for run_analysis. 
-run_experiment = True
-run_analysis = False
+run_experiment = False
+run_analysis = True
 NO_CUDA_OPTION = False
 
 # Note that currently only GNN HPO is supported. 
@@ -17,8 +17,8 @@ num_evals = 20
 hpo_slurm_file = "hpo.slurm"
 
 # these flags are to choose which evaluation sets will be used for inference
-inference_option = False
-inference_name = "10k" # '1k', '10k', '50k', '200k'
+inference_option = True
+inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # enable/disable models
 enable_gnn = True
@@ -26,7 +26,7 @@ enable_xgboost = True
 enable_regression = True
 enable_multiclass = True
 
-experiment_name = "1k" # '1k', '10k', '50k'
+experiment_name = "50k" # '1k', '10k', '50k'
 cleanup = False
 cleanup_name = "1k" # 'All' or '1k', '10k', '50k'
 
@@ -86,10 +86,25 @@ gnn_optimal_param_regression = [ # based on 10k HPO
     "--batch_size", "96",
 ]
 
+graph_format_options = {
+    "tick_font_size": 12,
+    "label_font_size": 14,
+    "default_plot_size": (8, 6),
+    "training_graph_background_color": '#EAEAF2',
+    "training_graph_num_xticks": 6,
+    "training_graph_num_yticks": 6,
+    "training_graph_xlabel": "Epochs",
+    "training_graph_ytick_rotation": 45,
+    "train_loss_ylim": (-0.25, 1.5),
+    "grid_color": 'white',
+    "box_plot_xlim": (-0.5, 10.5),
+    "box_plot_ylim": (-3.9, 10.9)
+}
+
 
 if __name__ == "__main__":
-    experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, inference_option, inference_name)
-    experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, inference_option, inference_name)
+    experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, inference_option, inference_name, graph_format_options)
+    experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, inference_option, inference_name, graph_format_options)
 
     if cleanup:
         # doesn't matter which instance we use, as the parameters are the same

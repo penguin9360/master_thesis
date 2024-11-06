@@ -28,10 +28,11 @@ UNSOLVED_LENGTH = 0
 NO_CUDA_OPTION = True
 model_parameters = []
 tensorboard_log_dir = ""
+graph_format_options = {}
 
 
 def set_parameters(experiment: Experiment, model_param: list):
-    global experiment_name, experiment_mode, results_dir, figures_dir, combined_set, training_set, test_set, validation_set, chemprop_prediction, chemprop_model_dir, extract_file_from_hdf, UNSOLVED_LENGTH, NO_CUDA_OPTION, inference_option, inference_name, inference_combined_set, inference_test_set, model_parameters, tensorboard_log_dir
+    global experiment_name, experiment_mode, results_dir, figures_dir, combined_set, training_set, test_set, validation_set, chemprop_prediction, chemprop_model_dir, extract_file_from_hdf, UNSOLVED_LENGTH, NO_CUDA_OPTION, inference_option, inference_name, inference_combined_set, inference_test_set, model_parameters, tensorboard_log_dir, graph_format_options
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -51,6 +52,7 @@ def set_parameters(experiment: Experiment, model_param: list):
     inference_combined_set = experiment.inference_combined_set
     inference_test_set = experiment.inference_test_set
     model_parameters = model_param
+    graph_format_options = experiment.graph_format_options
 
     tensorboard_log_dir = "./gnn/model/" + experiment_name + "_" + experiment_mode + "/fold_0/model_0" + "/"
 
@@ -68,7 +70,7 @@ def plot_gnn_learning_curves():
         args = parser.parse_args()
         params = vars(args)
 
-        plot_tensorboard_learning_curves(params)
+        plot_tensorboard_learning_curves(params=params, epochs=model_parameters[1])
 
 
 def run_gnn():

@@ -22,6 +22,7 @@ class Experiment:
     inference_name = ""
     inference_combined_set = ""
     inference_test_set = ""
+    graph_format_options = {}
 
     UNSOLVED_LENGTH = 0
     NO_CUDA_OPTION = True
@@ -29,13 +30,14 @@ class Experiment:
     cleanable_directories = ["gnn", "xgboost", "figures", "result_extract", "train_test"]
 
 
-    def __init__(self, name, mode, no_cuda_option, inference_option, inference_name):
+    def __init__(self, name, mode, no_cuda_option, inference_option, inference_name, graph_format_options):
         self.experiment_name = name
         self.extract_file_from_hdf = "./result_extract/" + self.experiment_name + "_extract.csv"
         self.inference_option = inference_option
         self.inference_name = inference_name
         self.experiment_mode = mode
         self.NO_CUDA_OPTION = no_cuda_option
+        self.graph_format_options = graph_format_options
         
         self.results_dir = "results/" + self.experiment_name + "/"
         self.combined_set = "./train_test/" + self.experiment_name + "/" + self.experiment_name + "_combined.csv"

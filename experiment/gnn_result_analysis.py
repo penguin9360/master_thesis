@@ -21,6 +21,7 @@ test_set = ""
 inference_option = ""
 inference_name = ""
 df = None
+graph_format_options = {}
 
 def calculate_regression_metrics(df):
     rmse = np.sqrt(mean_squared_error(y_true=df['route_length_truth'], y_pred=df['route_length_predicted']))
@@ -45,7 +46,7 @@ def calculate_confusion_matrix_values(y_true, y_pred):
 
 
 def set_parameters(experiment: Experiment):
-    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, chemprop_prediction, test_set, df, inference_option, inference_name
+    global experiment_name, experiment_mode, results_dir, figures_dir, file_name, test_file, chemprop_prediction, test_set, df, inference_option, inference_name, graph_format_options
 
     experiment_name = experiment.experiment_name
     experiment_mode = experiment.experiment_mode
@@ -57,6 +58,7 @@ def set_parameters(experiment: Experiment):
     test_set = experiment.test_set
     inference_option = experiment.inference_option
     inference_name = experiment.inference_name
+    graph_format_options = experiment.graph_format_options
     df = pd.read_csv(chemprop_prediction)
 
     if inference_option:
@@ -154,7 +156,7 @@ def run_gnn_result_analysis():
         auc_roc = metrics.auc(fpr, tpr)
 
         print(f"plotting {roc_graph_title}...")
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=graph_format_options['default_plot_size'])
         plt.plot(fpr, tpr, label='AUC ROC = {:.2f}'.format(auc_roc))
         plt.plot([0, 1], [0, 1], 'k--')
         plt.xlabel('False Positive Rate')
@@ -172,11 +174,11 @@ def run_gnn_result_analysis():
             'Metric': ['Accuracy', 'F1 Score', 'MCC', 'Precision', 'Recall'],
             'Value': [round(accuracy, 3), round(f1_score, 3), round(mcc_score, 3), round(average_precision, 3), round(recall, 3)]
         })
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=graph_format_options['default_plot_size'])
         plt.axis('off')
         table = plt.table(cellText=classification_table.values, colLabels=classification_table.columns, cellLoc='center', loc='center')
         table.auto_set_font_size(False)
-        table.set_fontsize(12)
+        table.set_fontsize(graph_format_options['label_font_size'])
         table.scale(1, 1.5)
         for i in range(len(classification_table.columns)):
             table[0, i].set_facecolor('grey')

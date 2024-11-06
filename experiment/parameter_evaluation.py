@@ -1,12 +1,15 @@
 from experiment_config import Experiment
-from hyperopt import hp, fmin, tpe, Trials
+from hyperopt import hp, fmin, tpe, Trials, rand
 import chemprop
 from chemprop.train import cross_validate, run_training
 import os
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from start_experiment import enable_regression, enable_multiclass, experiment_name, num_evals, NO_CUDA_OPTION
+from start_experiment import enable_regression, enable_multiclass, experiment_name, num_evals, NO_CUDA_OPTION, search_option
+import numpy as np
+import argparse
+import sys
 
 # pre-selected values
 # epochs = 150
@@ -26,26 +29,51 @@ from start_experiment import enable_regression, enable_multiclass, experiment_na
 # --max-lr <n> Maximum learning rate (default 0.001)
 # --final-lr <n> Final learning rate (default 0.0001)
 
+# grid search param sets for 1k and 10k
 # epochs_set = [50, 100, 150, 200, 250]
 # depth_set = [3, 5, 6, 7, 9]
 # init_lr_set = [0.00005, 0.000075, 0.0001, 0.000125, 0.00015]
 # max_lr_set = [0.0005, 0.00075, 0.001, 0.00125, 0.0015]
 # batch_size_set = [32, 48, 64, 80, 96]
 
-# reduced search space for 50k
+# reduced grid search space for 50k
 epochs_set = [50, 200, 250]
 depth_set = [3, 7, 9]
 init_lr_set = [0.00005, 0.000075, 0.0001]
 max_lr_set = [0.00075, 0.001, 0.00125]
 batch_size_set = [48, 64, 96]
 
-hyper_params = {
-    "epochs": hp.choice("epochs", epochs_set),
-    "depth": hp.choice("depth", depth_set),
-    "init_lr": hp.choice("init_lr", init_lr_set),
-    "max_lr": hp.choice("max_lr", max_lr_set),
-    "batch_size": hp.choice("batch_size", batch_size_set),
-}
+# boundaries for random search
+lower_epochs = 10
+upper_epochs = 50
+lower_depth = 2
+upper_depth = 10
+lower_init_lr = 1e-5
+upper_init_lr = 1e-3
+lower_max_lr = 1e-3
+upper_max_lr = 1e-1
+lower_batch_size = 16
+upper_batch_size = 128
+
+hyper_params = {}
+if search_option == "grid":
+    hyper_params = {
+        "epochs": hp.choice("epochs", epochs_set),
+        "depth": hp.choice("depth", depth_set),
+        "init_lr": hp.choice("init_lr", init_lr_set),
+        "max_lr": hp.choice("max_lr", max_lr_set),
+        "batch_size": hp.choice("batch_size", batch_size_set),
+    }
+elif search_option == "random":
+    hyper_params = {
+        'epochs': hp.quniform('epochs', lower_epochs, upper_epochs, 1),
+        'depth': hp.quniform('depth', lower_depth, upper_depth, 1),
+        'init_lr': hp.loguniform('init_lr', np.log(lower_init_lr), np.log(upper_init_lr)),
+        'max_lr': hp.loguniform('max_lr', np.log(lower_max_lr), np.log(upper_max_lr)),
+        'batch_size': hp.qloguniform('batch_size', np.log(lower_batch_size), np.log(upper_batch_size), 1)
+    }
+else:
+    raise ValueError("Invalid search option")
 
 experiment_mode = ""
 training_set = ""
@@ -81,11 +109,11 @@ def set_experiment_params(experiment: Experiment, current_time):
 
 def objective(params):
     training_arguments = [
-        '--epochs', str(params['epochs']),
-        '--depth', str(params['depth']),
+        '--epochs', str(int(params['epochs'])),
+        '--depth', str(int(params['depth'])),
         '--init_lr', str(params['init_lr']),
         '--max_lr', str(params['max_lr']),
-        '--batch_size', str(params['batch_size']),
+        '--batch_size', str(int(params['batch_size'])),
         '--save_dir',  hpo_models,
         '--data_path', training_set,
         '--separate_val_path', validation_set,
@@ -104,22 +132,45 @@ def objective(params):
 
 
 def run_hpo(num_evals, best_param_log_name):
-    print(f"================================================== Starting GNN HPO experiment {experiment_name} {experiment_mode}, num_evals = {num_evals}... ==================================================")
+    print(f"================================================== Starting GNN HPO experiment {experiment_name} {experiment_mode}, num_evals = {num_evals}, search_option = {search_option}... ==================================================")
     trials = Trials()
-    best = fmin(
-        fn=objective,
-        space=hyper_params,
-        algo=tpe.suggest,
-        max_evals=num_evals,
-        trials=trials
-    )
-    best_hyperparams = {
+    if search_option == "grid":
+        best = fmin(
+            fn=objective,
+            space=hyper_params,
+            algo=tpe.suggest,
+            max_evals=num_evals,
+            trials=trials
+        )
+
+        best_hyperparams = {
         "epochs": epochs_set[best['epochs']],
         "depth": depth_set[best['depth']],
         "init_lr": init_lr_set[best['init_lr']],
         "max_lr": max_lr_set[best['max_lr']],
         "batch_size": batch_size_set[best['batch_size']],
-    }
+        }
+
+    elif search_option == "random":
+        best = fmin(
+            fn=objective,
+            space=hyper_params,
+            algo=rand.suggest, 
+            max_evals=num_evals,
+            trials=trials
+        )
+
+        best_hyperparams = {
+            "epochs": int(best['epochs']),
+            "depth": int(best['depth']),
+            "init_lr": best['init_lr'],
+            "max_lr": best['max_lr'],
+            "batch_size": int(best['batch_size']),
+        }
+    else:
+        raise ValueError("Invalid search option")
+    
+    
     print("Best hyperparameters:", best_hyperparams)
     
     finish_time = datetime.now().strftime("%Y%m%d_%H%M")
@@ -128,10 +179,29 @@ def run_hpo(num_evals, best_param_log_name):
         f.write(f"finished at {finish_time}\n\n")
         for key, value in best_hyperparams.items():
             f.write(f"{key}: {value}\n")
-    print(f"================================================== Finished GNN HPO experiment {experiment_name} {experiment_mode}... ==================================================")
+    print(f"================================================== Finished GNN HPO experiment {experiment_name} {experiment_mode}, search_option = {search_option}, num_evals = {num_evals}... ==================================================")
 
 
 if __name__ == "__main__":
+    # Add argument parsing
+    parser = argparse.ArgumentParser(description='Run parameter evaluation.')
+    parser.add_argument('--task', type=str, choices=['regression', 'multiclass', 'both'], default='both',
+                        help='Specify which task to run: regression, multiclass, or both.')
+    args = parser.parse_args()
+
+    # Set enable_regression and enable_multiclass based on the argument
+    if args.task == 'regression':
+        enable_regression = True
+        enable_multiclass = False
+    elif args.task == 'multiclass':
+        enable_regression = False
+        enable_multiclass = True
+    elif args.task == 'both':
+        enable_regression = True
+        enable_multiclass = True
+    else:
+        print("Invalid task specified.")
+        sys.exit(1)
     experiment_regression = Experiment(experiment_name, 'regression', NO_CUDA_OPTION, False, "", graph_format_options)
     experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, False, "", graph_format_options)
     
@@ -140,7 +210,7 @@ if __name__ == "__main__":
         set_experiment_params(experiment_regression, current_time)
         best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
         with open(best_param_log_name, 'w') as f:
-            f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals} \n started at {current_time}\n\n")
+            f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals}, search_option: {search_option}, \n started at {current_time}\n\n")
         run_hpo(num_evals, best_param_log_name)
 
     if enable_multiclass:
@@ -148,7 +218,7 @@ if __name__ == "__main__":
         set_experiment_params(experiment_multiclass, current_time)
         best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
         with open(best_param_log_name, 'w') as f:
-            f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals} \n started at {current_time}\n\n")
+            f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals}, search_option: {search_option},  \n started at {current_time}\n\n")
         run_hpo(num_evals, best_param_log_name)
 
 

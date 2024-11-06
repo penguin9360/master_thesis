@@ -5,36 +5,38 @@ from xg_boost_result_analysis import run_xg_boost_result_analysis, set_parameter
 from helpers import write_hpo_slurm_file, set_parameters as set_helper_parameters
 from experiment_config import Experiment
 
-# experiment parameters - run_experiment must be set to True to run any experiments. Same for run_analysis. 
+# Basic options
+experiment_name = "1k" # '1k', '10k', '50k'
 run_experiment = True
 run_analysis = True
-NO_CUDA_OPTION = False
-
-# Note that currently only GNN HPO is supported. 
-# If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated.
-slurm_hpo_option = False
-num_evals = 35
-hpo_slurm_file = "hpo.slurm"
-
-# these flags are to choose which evaluation sets will be used for inference
-inference_option = False
-inference_name = "10k" # '1k', '10k', '50k', '200k'
-
-# enable/disable models
 enable_gnn = True
 enable_xgboost = True
 enable_regression = True
 enable_multiclass = True
+NO_CUDA_OPTION = False
 
-experiment_name = "50k" # '1k', '10k', '50k'
+# Inference options
+inference_option = False
+inference_name = "10k" # '1k', '10k', '50k', '200k'
+
+# HPO options - Note that currently only GNN HPO is supported. 
+# If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated.
+slurm_hpo_option = True
+num_evals = 3
+search_option = "random" # 'random' or 'grid'
+hpo_slurm_regression = "hpo_regression.slurm"
+hpo_slurm_multiclass = "hpo_multiclass.slurm"
+
+retrain_gnn_with_optimal_param = False
+
+# default parameters for base experiments, can be tuned
+epochs = 150
+depth = 6
+
+# Cleanup options
 cleanup = False
 cleanup_name = "1k" # 'All' or '1k', '10k', '50k'
 
-# make sure to toggle this flag to retrain with optimal params
-retrain_gnn_with_optimal_param = False
-
-epochs = 150
-depth = 6
 # To pass params, gnn uses list, xgboost uses dict
 xgboost_model_param = {
     "n_estimators": epochs, 
@@ -112,9 +114,9 @@ if __name__ == "__main__":
     
     if slurm_hpo_option:
         if enable_regression:
-            write_hpo_slurm_file(hpo_slurm_file=hpo_slurm_file, experiment_name=experiment_name, experiment_mode='regression')
+            write_hpo_slurm_file(hpo_slurm_file=hpo_slurm_regression, experiment_name=experiment_name, experiment_mode='regression', search_option=search_option, num_evals=num_evals)
         if enable_multiclass:
-            write_hpo_slurm_file(hpo_slurm_file=hpo_slurm_file, experiment_name=experiment_name, experiment_mode='multiclass')
+            write_hpo_slurm_file(hpo_slurm_file=hpo_slurm_multiclass, experiment_name=experiment_name, experiment_mode='multiclass', search_option=search_option, num_evals=num_evals)
 
     # experiment 
     if run_experiment and not slurm_hpo_option:

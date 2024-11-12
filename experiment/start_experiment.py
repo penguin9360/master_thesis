@@ -6,23 +6,23 @@ from helpers import write_hpo_slurm_file, set_parameters as set_helper_parameter
 from experiment_config import Experiment
 
 # Basic options
-experiment_name = "10k" # '1k', '10k', '50k'
-run_experiment = False
+experiment_name = "1k" # '1k', '10k', '50k'
+run_experiment = True
 run_analysis = True
 enable_gnn = True
-enable_xgboost = False
+enable_xgboost = True
 enable_regression = True
-enable_multiclass = False
+enable_multiclass = True
 NO_CUDA_OPTION = False
 
 # Inference options
-inference_option = True
-inference_name = "50k" # '1k', '10k', '50k', '200k'
+inference_option = False
+inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # HPO options - Note that currently only GNN HPO is supported. 
 # If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated.
 slurm_hpo_option = False
-num_evals = 50
+num_evals = 50 # reduce to 35 for 50k grid and random search; 1k and 10k grid search used 50
 search_option = "random" # 'random' or 'grid'
 hpo_slurm_regression = "hpo_regression.slurm"
 hpo_slurm_multiclass = "hpo_multiclass.slurm"

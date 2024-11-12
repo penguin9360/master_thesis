@@ -420,6 +420,11 @@ def make_box_plot(df, metrics: list, algorithm):
     ax.set_ylabel('Predicted Route Length', fontsize=graph_format_options['label_font_size'])
     ax.set_title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}", fontsize=graph_format_options['label_font_size'])
     ax.tick_params(axis='both', which='major', labelsize=graph_format_options['tick_font_size'])
+    x_positions = ax.get_xticks()
+    xticks_labels = [str(int(x)) for x in x_positions]
+    xticks_labels[0] = 'unsolved'
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels(xticks_labels)
     print(f"Saving box plot to {box_plot_path}")
     os.makedirs(os.path.dirname(box_plot_path), exist_ok=True)
     plt.savefig(box_plot_path)
@@ -446,6 +451,10 @@ def make_reg_plot(df, metrics: list, algorithm):
     # plt.title(reg_plot_title + f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}")
     ax.set_title(f"\nRMSE: {rmse:.2f}, MAE: {mae:.2f}, R-squared: {r_squared:.2f}", fontsize=graph_format_options['label_font_size'])
     ax.tick_params(axis='both', which='major', labelsize=graph_format_options['tick_font_size'])
+    x_positions = ax.get_xticks()
+    xticks_labels = ['unsolved' if int(x) == 0 else str(int(x)) for x in x_positions]
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels(xticks_labels)
     os.makedirs(os.path.dirname(reg_plot_path), exist_ok=True)
     plt.savefig(reg_plot_path)
 

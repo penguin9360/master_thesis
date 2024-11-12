@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=10k_inf_50k
-#SBATCH --partition="gpu-medium"
-#SBATCH --time=1-00:00:00
+#SBATCH --job-name=10k_inf_200k
+#SBATCH --partition="gpu-short"
+#SBATCH --time=04:00:00
 #SBATCH --ntasks=1
 #SBATCH --mem=30GB
 #SBATCH --mail-user="s2917211@vuw.leidenuniv.nl"
 #SBATCH --mail-type="ALL"
-#SBATCH --output=slurm_output/inference/10k_inf_50k_%A.out
+#SBATCH --output=slurm_output/inference/10k_inf_200k_%A.out
 #SBATCH --gres=gpu:1
 
 source activate aizynth-dev

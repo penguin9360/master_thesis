@@ -4,6 +4,8 @@ import random
 import pandas as pd
 import numpy as np
 from experiment_config import Experiment
+import subprocess as subp
+from time import sleep
 
 from tensorboard.backend.event_processing import event_accumulator as ea
 from matplotlib import pyplot as plt
@@ -52,7 +54,7 @@ def replace_line(file_name, line_num, text):
     out.close()
 
 
-def write_hpo_slurm_file(hpo_slurm_file, experiment_name, experiment_mode, search_option, num_evals):
+def submit_hpo_slurm(hpo_slurm_file, experiment_name, experiment_mode, search_option, num_evals):
     slurm_job_name = f"#SBATCH --job-name=HPO_{experiment_name}_{experiment_mode}_{search_option}_{num_evals}\n" # line 2
     if experiment_name == "50k" or experiment_name == "10k":
         slurm_partition = "#SBATCH --partition=\"gpu-long\"\n" # line 3
@@ -68,9 +70,13 @@ def write_hpo_slurm_file(hpo_slurm_file, experiment_name, experiment_mode, searc
     replace_line(hpo_slurm_file, 9, slurm_output)
     print(f"================================================== GNN HPO slurm file written for {experiment_name} {experiment_mode} {search_option} search with num_evals = {num_evals} ==================================================")
     if experiment_mode == 'regression':
-        print("Please use the command 'sbatch hpo_regression.slurm' to run the GNN HPO experiment.")
+        print("Job submitted as specifed in 'hpo_regression.slurm'. If rerun is needed, use the command 'sbatch hpo_regression.slurm' to run the GNN HPO experiment.")
     if experiment_mode == 'multiclass':
-        print("Please use the command 'sbatch hpo_multiclass.slurm' to run the GNN HPO experiment.")
+        print("Job submitted as specifed in 'hpo_multiclass.slurm'. If rerun is needed, use the command 'sbatch hpo_multiclass.slurm' to run the GNN HPO experiment.")
+    subp.check_call(['sbatch', hpo_slurm_file])
+    print("====================================================== current queue: =======================================================")
+    subp.check_call(['squeue', '--me'])
+    sleep(3) # very important as otherwise the slurm jobs cant distinguish log directories and will overwrite the output files
 
 
 def check_and_remove_duplicates(X_train, X_test, y_train, y_test):
@@ -278,6 +284,8 @@ def plot_xgboost_learning_curves(experiment_mode, model, metrics, save_dir, epoc
             ax.plot(x_raw, y_raw, color='blue', alpha=0.4, label='regression_train_raw')
             ax.plot(x_smooth, y_smooth, color='blue', linewidth=1.5, label='regression_train_smooth')
         else:
+            if 'rmse' in metric:
+                continue
             # Get raw values
             y_raw = results['validation_0']['m' + metric]
             x_raw = list(range(len(y_raw)))
@@ -310,8 +318,8 @@ def plot_xgboost_learning_curves(experiment_mode, model, metrics, save_dir, epoc
         x_positions = np.linspace(0, epochs, graph_format_options['training_graph_num_xticks'])  
         x_labels = [f"{int(e)}" for e in x_positions]
         y_min, y_max = plt.ylim()
-        y_ticks = np.linspace(y_min, y_max, graph_format_options['training_graph_num_yticks'])
-        plt.yticks(y_ticks)
+        # y_ticks = np.linspace(y_min, y_max, graph_format_options['training_graph_num_yticks'])
+        # plt.yticks(y_ticks)
         plt.xticks(x_positions, x_labels, fontsize=graph_format_options['tick_font_size'])
         plt.grid(True, color=graph_format_options['grid_color'])
         plt.gca().set_facecolor(graph_format_options['training_graph_background_color'])
@@ -333,16 +341,20 @@ def plot_tensorboard_learning_curves(params, epochs):
   acc = ea.EventAccumulator(log_path, size_guidance={ea.SCALARS: 0})
   acc.Reload()
 
+#   print("Debug - Full Tags:", acc.Tags())  # Check all available tags
+#   print("Debug - Available keys:", acc.Tags().keys())  # Check if 'scalars' exists
+
   # only support scalar now
   scalar_list = acc.Tags()['scalars']
-  print("scalar_list: ", scalar_list)
+  scalar_list = [tag for tag in scalar_list if 'test' not in tag and 'norm' not in tag]
+  print("Debug - Scalar list:", scalar_list)  # Check what's in scalar_list
+  
   x_list = []
   y_list = []
   x_list_raw = []
   y_list_raw = []
   total_steps = 0
   for tag in scalar_list:
-    # print("tag: ", tag)
     # if 'param' in tag:
     #   for s in acc.Scalars(tag):
     #     print(f"s.step: {s.step}, s.value: {s.value}")
@@ -366,33 +378,51 @@ def plot_tensorboard_learning_curves(params, epochs):
     # raw curve
     x_list_raw.append(x)
     y_list_raw.append(y)
-    
-    # fig, ax = plt.subplots()
-    for i in range(len(x_list)):
-        plt.figure(i, figsize=graph_format_options['default_plot_size'])
-        plt.clf()
-        plt.subplot(111)
-        plt.plot(x_list_raw[i], y_list_raw[i], color=colors.to_rgba(color_code, alpha=0.4))
-        plt.plot(x_list[i], y_list[i], color=color_code, linewidth=1.5)
-        plt.xlabel(graph_format_options['training_graph_xlabel'], fontsize=graph_format_options['label_font_size'])
-        plt.ylabel(scalar_list[i], fontsize=graph_format_options['label_font_size'])
+
+    current_idx = len(x_list_raw) - 1  # Index of current tag's data
+
+    print(f"Debug - Plotting {tag} with {len(x_list_raw[current_idx])} points")
+    # print(f"Debug - x range: {min(x_list_raw[current_idx])} to {max(x_list_raw[current_idx])}")
+    # print(f"Debug - y range: {min(y_list_raw[current_idx])} to {max(y_list_raw[current_idx])}")
+
+    plt.figure(current_idx, figsize=graph_format_options['default_plot_size'])
+    plt.clf()
+    plt.subplot(111)
+    if graph_format_options['smooth_curve_option']:
+        plt.plot(x_list_raw[current_idx], y_list_raw[current_idx], color=colors.to_rgba(color_code, alpha=0.4))
+        plt.plot(x_list[current_idx], y_list[current_idx], color=color_code, linewidth=1.5)
+    else:
+        plt.plot(x_list_raw[current_idx], y_list_raw[current_idx], color=color_code)
+    plt.xlabel(graph_format_options['training_graph_xlabel'], fontsize=graph_format_options['label_font_size'])
+    plt.ylabel(scalar_list[current_idx], fontsize=graph_format_options['label_font_size'])
+
+    # if 'validation' in tag or 'test' in tag:
+    #     # plt.yscale('log')
+        
+    #     ax = plt.gca()
+    #     ax.yaxis.set_major_formatter(plt.ScalarFormatter(useOffset=False))
+    #     ax.yaxis.set_minor_formatter(plt.ScalarFormatter(useOffset=False))
+    #     ax.yaxis.set_major_locator(plt.LogLocator(numticks=graph_format_options['training_graph_num_xticks']))
+        
     if 'train_loss' in tag:
         plt.ylim(graph_format_options['train_loss_ylim'])
         plt.axhline(y=0, color='lightgrey', linestyle='--', zorder=1)
+
     if 'learning_rate' in tag:
         plt.gca().yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
         plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    
+    plt.grid(True)
     
     # tick magic to convert xaxis numbers from steps to epochs
     num_ticks = graph_format_options['training_graph_num_xticks']
     x_steps = np.linspace(0, total_steps, num_ticks)
     x_epochs = np.linspace(0, epochs, num_ticks)
-    
-    y_min, y_max = plt.ylim()
-    y_ticks = np.linspace(y_min, y_max, num_ticks)
-    plt.yticks(y_ticks)
+
     plt.xticks(x_steps, [f"{int(e)}" for e in x_epochs], fontsize=graph_format_options["tick_font_size"])
-    plt.yticks(fontsize=graph_format_options["tick_font_size"], rotation=graph_format_options['training_graph_ytick_rotation'])
+    plt.yticks(fontsize=graph_format_options["tick_font_size"])
+    if not 'validation' in tag:
+        plt.yticks(rotation=graph_format_options['training_graph_ytick_rotation'])
 
     plot_file = figures_dir + experiment_name + '_' + algorithm + '_' + experiment_mode + '_' + tag + '.png'
     if not os.path.exists(figures_dir):

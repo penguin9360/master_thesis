@@ -1,5 +1,5 @@
 import chemprop
-from helpers import get_files_in_directory, plot_tensorboard_learning_curves
+from helpers import get_files_in_directory, plot_tensorboard_learning_curves, set_parameters
 import subprocess
 from tensorboard.backend.event_processing import event_accumulator
 import pandas as pd
@@ -8,15 +8,39 @@ import numpy as np
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 # from tensorflow.python.summary.summary_iterator import summary_iterator
 import argparse
-
+from experiment_config import Experiment
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from start_experiment import graph_format_options
 
 # result_200k = get_files_in_directory("./results/200k")
 # print(len(result_200k))
 
-experiment_mode = 'regression'
-# experiment_mode = 'multiclass'
+# experiment_mode = 'regression'
+experiment_mode = 'multiclass'
+
+experiment_regression = Experiment("1k", 'regression', False, False, "", graph_format_options)
+experiment_multiclass = Experiment("1k", 'multiclass', False, False, "", graph_format_options)
+if experiment_mode == 'regression':
+    set_parameters(experiment_regression)
+else:
+    set_parameters(experiment_multiclass)
+epochs = 50
+gnn_optimal_param_multiclass = [ # based on 1k HPO
+    "--epochs", str(epochs), #optimal 50
+    "--depth", "5",
+    "--init_lr", "0.00005",
+    "--max_lr", "0.001",
+    "--batch_size", "96",
+]
+
+gnn_optimal_param_regression = [ # based on 1k HPO
+    "--epochs", str(epochs), # optimal 150
+    "--depth", "7",
+    "--init_lr", "0.000075",
+    "--max_lr", "0.0015",
+    "--batch_size", "48",
+]
 
 training_set = "./train_test/1k/1k_" + experiment_mode + "_train.csv"
 test_set = "./train_test/1k/1k_" + experiment_mode + "_test.csv"
@@ -32,12 +56,22 @@ if experiment_mode == 'multiclass':
     training_arguments.append("4")
 training_arguments_2 = ["--separate_val_path", val_set, "--separate_test_path", test_set]
 training_arguments+=(training_arguments_2)
+
 # training_arguments.append("--split_sizes")
-# training_arguments.append([1.0,0.0,0.0]) 
+# training_arguments.extend(map(str, (0.999, 0.001, 0.0)))
+if experiment_mode == 'regression':
+    training_arguments += gnn_optimal_param_regression
+if experiment_mode == 'multiclass':
+    training_arguments += gnn_optimal_param_multiclass
+training_arguments.extend([
+    '--metric', 'accuracy',
+    '--extra_metrics', 'f1',
+])
 
 args = chemprop.args.TrainArgs().parse_args(training_arguments)
-# mean_score, std_score = chemprop.train.cross_validate(args=args, train_func=chemprop.train.run_training)
-# print("Chemprop training score: \nMean: ", mean_score, " | std: ", std_score)
+
+mean_score, std_score = chemprop.train.cross_validate(args=args, train_func=chemprop.train.run_training)
+print("Chemprop training score: \nMean: ", mean_score, " | std: ", std_score)
 
 tensorboard_log_dir = "./gnn/model/1k_" + experiment_mode + "/fold_0/model_0"
 
@@ -73,7 +107,7 @@ def plot_tensorflow_log(path):
     y = np.zeros([steps, 2])
 
     for i in range(steps):
-        y[i, 0] = training_accuracies[i][2] # value
+        y[i, 0] = training_accuracies[i][2] 
         y[i, 1] = validation_accuracies[i][2]
 
     plt.plot(x, y[:,0], label='training accuracy')
@@ -139,4 +173,4 @@ for f in get_files_in_directory(tensorboard_log_dir):
     args = parser.parse_args()
     params = vars(args) # convert to ordinary dict
 
-    plot_tensorboard_learning_curves(params)
+    plot_tensorboard_learning_curves(params, epochs)

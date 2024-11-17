@@ -2,8 +2,10 @@ from gnn import run_gnn, set_parameters as set_gnn_parameters
 from xg_boost import run_xgboost, set_parameters as set_xgboost_parameters
 from gnn_result_analysis import run_gnn_result_analysis, set_parameters as set_gnn_analysis_parameters
 from xg_boost_result_analysis import run_xg_boost_result_analysis, set_parameters as set_xg_boost_analysis_parameters
-from helpers import write_hpo_slurm_file, set_parameters as set_helper_parameters
+from helpers import submit_hpo_slurm, set_parameters as set_helper_parameters
 from experiment_config import Experiment
+
+# safest and easiest embarrassingly parallel appraoch - just copy this file and run multiple instances with different parameters
 
 # Basic options
 experiment_name = "1k" # '1k', '10k', '50k'
@@ -20,9 +22,9 @@ inference_option = False
 inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # HPO options - Note that currently only GNN HPO is supported. 
-# If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated.
+# If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated and submitted.
 slurm_hpo_option = False
-num_evals = 50 # reduce to 35 for 50k grid and random search; 1k and 10k grid search used 50
+num_evals = 10 # reduce to 35 for 50k grid and random search; 1k and 10k grid search used 50; random search can be embarrasingly parallelized so 5*10=50
 search_option = "random" # 'random' or 'grid'
 hpo_slurm_regression = "hpo_regression.slurm"
 hpo_slurm_multiclass = "hpo_multiclass.slurm"
@@ -30,7 +32,7 @@ hpo_slurm_multiclass = "hpo_multiclass.slurm"
 retrain_gnn_with_optimal_param = False
 
 # default parameters for base experiments, can be tuned
-epochs = 150
+epochs = 150 # in paper 150, default 50
 depth = 6
 
 # Cleanup options
@@ -41,18 +43,17 @@ cleanup_name = "1k" # 'All' or '1k', '10k', '50k'
 xgboost_model_param = {
     "n_estimators": epochs, 
     "max_depth": depth, 
-    # "learning_rate": 0.1, 
-    # "objective": 
-    # "reg:squarederror"
-    }
+}
 
 gnn_model_param = [
     "--epochs", str(epochs),
     "--depth", str(depth),
-    # "hidden_size": 300, 
-    # "dropout": 0.0, 
-    # "batch_size": 32, 
-    # "num_workers": 0
+    # default values below
+    # "--epochs", "50",
+    # "--depth", "3",
+    # "--init_lr", "0.0001",
+    # "--max_lr", "0.001",
+    # "--batch_size", "64",
 ]
 
 # params from HPO
@@ -97,10 +98,11 @@ graph_format_options = {
     "training_graph_num_yticks": 6,
     "training_graph_xlabel": "Epochs",
     "training_graph_ytick_rotation": 45,
-    "train_loss_ylim": (-0.25, 1.5),
+    "train_loss_ylim": (-0.1, 1.5),
     "grid_color": 'white',
     "box_plot_xlim": (-0.5, 10.5),
-    "box_plot_ylim": (-3.9, 10.9)
+    "box_plot_ylim": (-3.9, 10.9),
+    "smooth_curve_option": True,
 }
 
 
@@ -114,9 +116,9 @@ if __name__ == "__main__":
     
     if slurm_hpo_option:
         if enable_regression:
-            write_hpo_slurm_file(hpo_slurm_file=hpo_slurm_regression, experiment_name=experiment_name, experiment_mode='regression', search_option=search_option, num_evals=num_evals)
+            submit_hpo_slurm(hpo_slurm_file=hpo_slurm_regression, experiment_name=experiment_name, experiment_mode='regression', search_option=search_option, num_evals=num_evals)
         if enable_multiclass:
-            write_hpo_slurm_file(hpo_slurm_file=hpo_slurm_multiclass, experiment_name=experiment_name, experiment_mode='multiclass', search_option=search_option, num_evals=num_evals)
+            submit_hpo_slurm(hpo_slurm_file=hpo_slurm_multiclass, experiment_name=experiment_name, experiment_mode='multiclass', search_option=search_option, num_evals=num_evals)
 
     # experiment 
     if run_experiment and not slurm_hpo_option:
@@ -165,7 +167,12 @@ if __name__ == "__main__":
                 set_xg_boost_analysis_parameters(experiment_multiclass)
                 set_helper_parameters(experiment_multiclass)
                 run_xg_boost_result_analysis()
-
-
+    # try:
+    #     # very dangerous!!!! only use on cloned instances of this script
+    #     import os
+    #     script_path = os.path.abspath(__file__)
+    #     os.remove(script_path)
+    # except Exception as e:
+    #     print(f"Error during execution: {e}")
     
     

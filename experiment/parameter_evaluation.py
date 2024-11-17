@@ -173,7 +173,7 @@ def run_hpo(num_evals, best_param_log_name):
     
     print("Best hyperparameters:", best_hyperparams)
     
-    finish_time = datetime.now().strftime("%Y%m%d_%H%M")
+    finish_time = datetime.now().strftime("%Y_%m%d_%H_%M_%S")
     
     with open(best_param_log_name, 'a') as f:
         f.write(f"finished at {finish_time}\n\n")
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     experiment_multiclass = Experiment(experiment_name, 'multiclass', NO_CUDA_OPTION, False, "", graph_format_options)
     
     if enable_regression:
-        current_time = datetime.now().strftime("%Y%m%d_%H%M")
+        current_time = datetime.now().strftime("%Y_%m%d_%H_%M_%S")
         set_experiment_params(experiment_regression, current_time)
         best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
         with open(best_param_log_name, 'w') as f:
@@ -214,7 +214,7 @@ if __name__ == "__main__":
         run_hpo(num_evals, best_param_log_name)
 
     if enable_multiclass:
-        current_time = datetime.now().strftime("%Y%m%d_%H%M")
+        current_time = datetime.now().strftime("%Y_%m%d_%H_%M_%S")
         set_experiment_params(experiment_multiclass, current_time)
         best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
         with open(best_param_log_name, 'w') as f:

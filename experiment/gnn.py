@@ -165,12 +165,18 @@ def run_gnn():
                 '--dataset_type', 'multiclass',
                 '--save_dir', chemprop_model_dir,
                 '--multiclass_num_classes', num_classes,
+                '--loss_function', 'cross_entropy',
+                '--metric', 'cross_entropy',
+                '--extra_metrics', 'accuracy', "f1",
             ]
         else:
             training_arguments = [
                 '--data_path', training_set,
                 '--dataset_type', experiment_mode,
                 '--save_dir', chemprop_model_dir,
+                '--loss_function', 'mse', # mse is the default loss function
+                '--metric', 'rmse',
+                '--extra_metrics', 'r2'
             ]
         if NO_CUDA_OPTION:
             training_arguments.append('--no_cuda')

@@ -46,6 +46,15 @@ def set_parameters(experiment: Experiment):
         experiment_name += "_inference_" + inference_name
 
 
+def append_lines(file_name, lines_to_add):
+    with open(file_name, 'a') as f:
+        if isinstance(lines_to_add, str):
+            f.write('\n' + lines_to_add)
+        else:
+            for line in lines_to_add:
+                f.write('\n' + line)
+
+
 def replace_line(file_name, line_num, text):
     lines = open(file_name, 'r').readlines()
     lines[line_num - 1] = text
@@ -74,6 +83,31 @@ def submit_hpo_slurm(hpo_slurm_file, experiment_name, experiment_mode, search_op
     if experiment_mode == 'multiclass':
         print("Job submitted as specifed in 'hpo_multiclass.slurm'. If rerun is needed, use the command 'sbatch hpo_multiclass.slurm' to run the GNN HPO experiment.")
     subp.check_call(['sbatch', hpo_slurm_file])
+    print("====================================================== current queue: =======================================================")
+    subp.check_call(['squeue', '--me'])
+    sleep(3) # very important as otherwise the slurm jobs cant distinguish log directories and will overwrite the output files
+
+
+def submit_offline_experiment_slurm(offline_slurm_file, offline_start_file):
+    slurm_job_name = "#SBATCH --job-name=%s\n" % str(offline_start_file).split(".")[0]  # line 2
+    if str(offline_start_file).startswith("50k"):
+        slurm_partition = "#SBATCH --partition=\"gpu-long\"\n" # line 3
+        slurm_time = "#SBATCH --time=7-00:00:00\n" # line 4
+    elif str(offline_start_file).startswith("1k"):
+        slurm_partition = "#SBATCH --partition=\"gpu-short\"\n"
+        slurm_time = "#SBATCH --time=04:00:00\n"
+    else:
+        slurm_partition = "#SBATCH --partition=\"gpu-medium\"\n" # line 3
+        slurm_time = "#SBATCH --time=1-00:00:00\n" # line 4
+    slurm_output = "#SBATCH --output=slurm_output/offline_run/%s_%%A.out\n" % str(offline_start_file).split(".")[0]  # line 9
+
+    replace_line(offline_slurm_file, 2, slurm_job_name)
+    replace_line(offline_slurm_file, 3, slurm_partition)
+    replace_line(offline_slurm_file, 4, slurm_time)
+    replace_line(offline_slurm_file, 9, slurm_output)
+    replace_line(offline_slurm_file, 14, f"python {offline_start_file}\n")
+    print(f"================================================== Offline experiment slurm file written and submitted for {offline_start_file}  ==================================================")
+    subp.check_call(['sbatch', offline_slurm_file])
     print("====================================================== current queue: =======================================================")
     subp.check_call(['squeue', '--me'])
     sleep(3) # very important as otherwise the slurm jobs cant distinguish log directories and will overwrite the output files

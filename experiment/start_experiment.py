@@ -2,23 +2,27 @@ from gnn import run_gnn, set_parameters as set_gnn_parameters
 from xg_boost import run_xgboost, set_parameters as set_xgboost_parameters
 from gnn_result_analysis import run_gnn_result_analysis, set_parameters as set_gnn_analysis_parameters
 from xg_boost_result_analysis import run_xg_boost_result_analysis, set_parameters as set_xg_boost_analysis_parameters
-from helpers import submit_hpo_slurm, set_parameters as set_helper_parameters
+from helpers import submit_hpo_slurm, submit_offline_experiment_slurm, set_parameters as set_helper_parameters, replace_line, append_lines
 from experiment_config import Experiment
 
+import shutil
+import os
+
 # safest and easiest embarrassingly parallel appraoch - just copy this file and run multiple instances with different parameters
+offline_script = False # experiments will only run if it is set to true, otherwise it will only set up the parameters for the offline script
 
 # Basic options
 experiment_name = "1k" # '1k', '10k', '50k'
 run_experiment = True
 run_analysis = True
 enable_gnn = True
-enable_xgboost = True
+enable_xgboost = False
 enable_regression = True
 enable_multiclass = True
 NO_CUDA_OPTION = False
 
 # Inference options
-inference_option = False
+inference_option = True
 inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # HPO options - Note that currently only GNN HPO is supported. 
@@ -32,7 +36,7 @@ hpo_slurm_multiclass = "hpo_multiclass.slurm"
 retrain_gnn_with_optimal_param = False
 
 # default parameters for base experiments, can be tuned
-epochs = 150 # in paper 150, default 50
+epochs = 15 # in paper 150, default 50, 15 from learning curve indication
 depth = 6
 
 # Cleanup options
@@ -121,58 +125,80 @@ if __name__ == "__main__":
             submit_hpo_slurm(hpo_slurm_file=hpo_slurm_multiclass, experiment_name=experiment_name, experiment_mode='multiclass', search_option=search_option, num_evals=num_evals)
 
     # experiment 
-    if run_experiment and not slurm_hpo_option:
-        if enable_gnn:
-            if enable_regression:
-                if retrain_gnn_with_optimal_param:
-                    gnn_model_param = gnn_optimal_param_regression
-                set_gnn_parameters(experiment_regression, gnn_model_param)
-                set_helper_parameters(experiment_regression)
-                run_gnn()
-            if enable_multiclass:
-                if retrain_gnn_with_optimal_param:
-                    gnn_model_param = gnn_optimal_param_multiclass
-                set_gnn_parameters(experiment_multiclass, gnn_model_param)
-                set_helper_parameters(experiment_multiclass)
-                run_gnn()
-        
-        if enable_xgboost:
-            if enable_regression:
-                set_xgboost_parameters(experiment_regression, xgboost_model_param)
-                set_helper_parameters(experiment_regression)
-                run_xgboost()
-            if enable_multiclass:
-                set_xgboost_parameters(experiment_multiclass, xgboost_model_param)
-                set_helper_parameters(experiment_multiclass)
-                run_xgboost()
+    if offline_script:
+        if run_experiment and not slurm_hpo_option:
+            if enable_gnn:
+                if enable_regression:
+                    if retrain_gnn_with_optimal_param:
+                        gnn_model_param = gnn_optimal_param_regression
+                    set_gnn_parameters(experiment_regression, gnn_model_param)
+                    set_helper_parameters(experiment_regression)
+                    run_gnn()
+                if enable_multiclass:
+                    if retrain_gnn_with_optimal_param:
+                        gnn_model_param = gnn_optimal_param_multiclass
+                    set_gnn_parameters(experiment_multiclass, gnn_model_param)
+                    set_helper_parameters(experiment_multiclass)
+                    run_gnn()
+            
+            if enable_xgboost:
+                if enable_regression:
+                    set_xgboost_parameters(experiment_regression, xgboost_model_param)
+                    set_helper_parameters(experiment_regression)
+                    run_xgboost()
+                if enable_multiclass:
+                    set_xgboost_parameters(experiment_multiclass, xgboost_model_param)
+                    set_helper_parameters(experiment_multiclass)
+                    run_xgboost()
 
-    # analysis
-    if run_analysis and not slurm_hpo_option:
-        if enable_gnn:
-            if enable_regression:
-                set_gnn_analysis_parameters(experiment_regression)
-                set_helper_parameters(experiment_regression)
-                run_gnn_result_analysis()
-            if enable_multiclass:
-                set_gnn_analysis_parameters(experiment_multiclass)
-                set_helper_parameters(experiment_multiclass)
-                run_gnn_result_analysis()
+        # analysis
+        if run_analysis and not slurm_hpo_option:
+            if enable_gnn:
+                if enable_regression:
+                    set_gnn_analysis_parameters(experiment_regression)
+                    set_helper_parameters(experiment_regression)
+                    run_gnn_result_analysis()
+                if enable_multiclass:
+                    set_gnn_analysis_parameters(experiment_multiclass)
+                    set_helper_parameters(experiment_multiclass)
+                    run_gnn_result_analysis()
 
-        if enable_xgboost:
-            if enable_regression:
-                set_xg_boost_analysis_parameters(experiment_regression)
-                set_helper_parameters(experiment_regression)
-                run_xg_boost_result_analysis()
-            if enable_multiclass:
-                set_xg_boost_analysis_parameters(experiment_multiclass)
-                set_helper_parameters(experiment_multiclass)
-                run_xg_boost_result_analysis()
-    # try:
-    #     # very dangerous!!!! only use on cloned instances of this script
-    #     import os
-    #     script_path = os.path.abspath(__file__)
-    #     os.remove(script_path)
-    # except Exception as e:
-    #     print(f"Error during execution: {e}")
+            if enable_xgboost:
+                if enable_regression:
+                    set_xg_boost_analysis_parameters(experiment_regression)
+                    set_helper_parameters(experiment_regression)
+                    run_xg_boost_result_analysis()
+                if enable_multiclass:
+                    set_xg_boost_analysis_parameters(experiment_multiclass)
+                    set_helper_parameters(experiment_multiclass)
+                    run_xg_boost_result_analysis()
+    else:
+        print("Setting up parameters for slurm offline run...")
+        cloned_start_file = f"{experiment_name}"
+        cloned_start_file += f"_gnn" if enable_gnn and not enable_xgboost else ""
+        cloned_start_file += f"_xgboost" if enable_xgboost and not enable_gnn else ""
+        cloned_start_file += f"_regression" if enable_regression and not enable_multiclass else ""
+        cloned_start_file += f"_multiclass" if enable_multiclass and not enable_regression else ""
+        cloned_start_file += f"_inference_{inference_name}" if inference_option else ""
+        cloned_start_file += f"_retrain" if retrain_gnn_with_optimal_param else ""
+        cloned_start_file += ".py"
+
+        # clone the start file
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        current_file = os.path.join(current_dir, "start_experiment.py")
+        cloned_file_path = os.path.join(current_dir, cloned_start_file)
+
+        shutil.copy2(current_file, cloned_file_path)
+
+        # update the cloned file and offline slurm file
+        replace_line(cloned_file_path, 12, f"offline_script = True\n")
+        replace_line(cloned_file_path, 43, f"cleanup = False\n")
+        # self-destruct the cloned file at the end of execution
+        append_lines(cloned_file_path, f"    os.remove(os.path.abspath(__file__))\n")
+
+        submit_offline_experiment_slurm(offline_slurm_file="./offline_experiment.slurm",offline_start_file=cloned_start_file)
+
+
+
     
     

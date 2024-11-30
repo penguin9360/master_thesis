@@ -23,3 +23,7 @@ experiment/figures*/
 experiment/train_test/
 experiment/archive/
 *access_token*
+*1k*.py
+*10k*.py
+*50k*.py
+*200k*.py

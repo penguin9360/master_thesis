@@ -66,9 +66,9 @@ use_features = True
 use_chirality = True
 
 # Evaluation metrics
-eval_metrics_multiclass = ["merror", "mlogloss"]
-eval_metrics_regression = ["error", "logloss", "rmse"]
-metric_to_plot = ['error', 'logloss', 'rmse']
+eval_metrics_multiclass = ["mlogloss",]
+eval_metrics_regression = ["rmse",]
+metric_to_plot = ['mlogloss', 'rmse']
 
 
 def set_parameters(experiment: Experiment, model_param: dict):

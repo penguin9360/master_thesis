@@ -9,20 +9,20 @@ import shutil
 import os
 
 # safest and easiest embarrassingly parallel appraoch - just copy this file and run multiple instances with different parameters
-offline_script = False # experiments will only run if it is set to true, otherwise it will only set up the parameters for the offline script
+offline_script = True # experiments will only run if it is set to true, otherwise it will only set up the parameters for the offline script
 
 # Basic options
 experiment_name = "1k" # '1k', '10k', '50k'
 run_experiment = True
 run_analysis = True
 enable_gnn = True
-enable_xgboost = False
+enable_xgboost = True
 enable_regression = True
 enable_multiclass = True
 NO_CUDA_OPTION = False
 
 # Inference options
-inference_option = True
+inference_option = False
 inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # HPO options - Note that currently only GNN HPO is supported. 
@@ -98,15 +98,18 @@ graph_format_options = {
     "label_font_size": 14,
     "default_plot_size": (8, 6),
     "training_graph_background_color": '#EAEAF2',
+    "training_graph_line_color": '#4169E1',
     "training_graph_num_xticks": 6,
     "training_graph_num_yticks": 6,
     "training_graph_xlabel": "Epochs",
     "training_graph_ytick_rotation": 45,
     "train_loss_ylim": (-0.1, 1.5),
+    "crossentropy_ylim": (0, 4),
+    "rmse_ylim": (0, 4),
     "grid_color": 'white',
     "box_plot_xlim": (-0.5, 10.5),
     "box_plot_ylim": (-3.9, 10.9),
-    "smooth_curve_option": True,
+    "smooth_curve_option": False,
 }
 
 

@@ -290,17 +290,20 @@ def is_empty_folder(path):
 
 def plot_xgboost_learning_curves(experiment_mode, model, metrics, save_dir, epochs):
     smooth_space = 5
-    
+    color_code = graph_format_options['training_graph_line_color']
     for metric in metrics:
-        loss_plot_path = figures_dir + experiment_name + "_xg_boost_" + experiment_mode + "_training_" + metric + "_plot.png"
+        print(f"plotting learning curves for {algorithm} {experiment_name} {experiment_mode} {metric}")
+        loss_plot_path = figures_dir + experiment_name + "_xg_boost_" + experiment_mode + "_validation_" + metric + "_plot.png"
         fig, ax = plt.subplots(figsize=graph_format_options['default_plot_size'])
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         results = model.evals_result()
         
         if experiment_mode == 'regression':
+            if 'logloss' in metric:
+                continue
             # Get raw values
-            y_raw = results['validation_0'][metric]
+            y_raw = results['validation_1'][metric]
             x_raw = list(range(len(y_raw)))
             
             # Calculate smooth curve
@@ -314,14 +317,16 @@ def plot_xgboost_learning_curves(experiment_mode, model, metrics, save_dir, epoc
                     x_smooth.append(x_raw[i])
                     y_smooth.append(sum(y_raw[i:i+smooth_space]) / float(smooth_space))
             
-            # Plot both raw and smooth curves
-            ax.plot(x_raw, y_raw, color='blue', alpha=0.4, label='regression_train_raw')
-            ax.plot(x_smooth, y_smooth, color='blue', linewidth=1.5, label='regression_train_smooth')
+            if graph_format_options['smooth_curve_option']:
+                ax.plot(x_raw, y_raw, color=colors.to_rgba(color_code, alpha=0.4), label='regression_train_raw')
+                ax.plot(x_smooth, y_smooth, color=color_code, linewidth=1.5, label='regression_train_smooth')
+            else:
+                ax.plot(x_raw, y_raw, color=color_code, label='regression_train_raw')
         else:
             if 'rmse' in metric:
                 continue
             # Get raw values
-            y_raw = results['validation_0']['m' + metric]
+            y_raw = results['validation_1'][metric]
             x_raw = list(range(len(y_raw)))
             
             # Calculate smooth curve
@@ -336,17 +341,23 @@ def plot_xgboost_learning_curves(experiment_mode, model, metrics, save_dir, epoc
                     y_smooth.append(sum(y_raw[i:i+smooth_space]) / float(smooth_space))
             
             # Plot both raw and smooth curves
-            ax.plot(x_raw, y_raw, color='blue', alpha=0.4, label='multiclass_train_raw')
-            ax.plot(x_smooth, y_smooth, color='blue', linewidth=1.5, label='multiclass_train_smooth')
+            if graph_format_options['smooth_curve_option']:
+                ax.plot(x_raw, y_raw, color=colors.to_rgba(color_code, alpha=0.4), label='multiclass_train_raw')
+                ax.plot(x_smooth, y_smooth, color=color_code, linewidth=1.5, label='multiclass_train_smooth')
+            else:
+                ax.plot(x_raw, y_raw, color=color_code, label='multiclass_train_raw')
         
-        plt.ylabel(metric, fontsize=graph_format_options['label_font_size'])
+        plt.ylabel("validation_" + metric, fontsize=graph_format_options['label_font_size'])
         plt.xlabel(graph_format_options['training_graph_xlabel'], fontsize=graph_format_options['label_font_size'])
 
         if 'logloss' in metric:
             if experiment_mode == 'multiclass':
                 plt.ylim(graph_format_options['train_loss_ylim'])
-            if experiment_mode == 'regression':
-                plt.ylim(-110, -70)
+                plt.ylabel("validation_cross_entropy", fontsize=graph_format_options['label_font_size'])
+            plt.ylim(graph_format_options['crossentropy_ylim'])
+        
+        if 'rmse' in metric:
+            plt.ylim(graph_format_options['rmse_ylim'])
 
         # tick magic
         x_positions = np.linspace(0, epochs, graph_format_options['training_graph_num_xticks'])  
@@ -355,10 +366,15 @@ def plot_xgboost_learning_curves(experiment_mode, model, metrics, save_dir, epoc
         # y_ticks = np.linspace(y_min, y_max, graph_format_options['training_graph_num_yticks'])
         # plt.yticks(y_ticks)
         plt.xticks(x_positions, x_labels, fontsize=graph_format_options['tick_font_size'])
+        plt.yticks(rotation=graph_format_options['training_graph_ytick_rotation'])
         plt.grid(True, color=graph_format_options['grid_color'])
         plt.gca().set_facecolor(graph_format_options['training_graph_background_color'])
         plt.yticks(fontsize=graph_format_options['tick_font_size'], rotation=graph_format_options['training_graph_ytick_rotation'])
-
+        
+        plt.gca().spines['top'].set_visible(False)   
+        plt.gca().spines['right'].set_visible(False) 
+        plt.gca().spines['bottom'].set_visible(False) 
+        plt.gca().spines['left'].set_visible(False) 
         plt.savefig(loss_plot_path)
 
 
@@ -370,7 +386,7 @@ def plot_tensorboard_learning_curves(params, epochs):
   sns.set_context("paper")
   log_path = params['logdir']
   smooth_space = params['smooth']
-  color_code = params['color']
+  color_code = graph_format_options['training_graph_line_color']
 
   acc = ea.EventAccumulator(log_path, size_guidance={ea.SCALARS: 0})
   acc.Reload()
@@ -429,6 +445,12 @@ def plot_tensorboard_learning_curves(params, epochs):
         plt.plot(x_list_raw[current_idx], y_list_raw[current_idx], color=color_code)
     plt.xlabel(graph_format_options['training_graph_xlabel'], fontsize=graph_format_options['label_font_size'])
     plt.ylabel(scalar_list[current_idx], fontsize=graph_format_options['label_font_size'])
+
+    if 'entropy' in tag:
+        plt.ylim(graph_format_options['crossentropy_ylim'])
+    
+    if 'rmse' in tag:
+        plt.ylim(graph_format_options['rmse_ylim'])
 
     # if 'validation' in tag or 'test' in tag:
     #     # plt.yscale('log')

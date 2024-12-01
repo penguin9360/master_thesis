@@ -86,7 +86,7 @@ def submit_hpo_slurm(hpo_slurm_file, experiment_name, experiment_mode, search_op
     subp.check_call(['sbatch', hpo_slurm_file])
     print("====================================================== current queue: =======================================================")
     subp.check_call(['squeue', '--me'])
-    sleep(3) # very important as otherwise the slurm jobs cant distinguish log directories and will overwrite the output files
+    # sleep(3) # very important as otherwise the slurm jobs cant distinguish log directories and will overwrite the output files
 
 
 def submit_offline_experiment_slurm(offline_slurm_file, offline_start_file):
@@ -111,7 +111,7 @@ def submit_offline_experiment_slurm(offline_slurm_file, offline_start_file):
     subp.check_call(['sbatch', offline_slurm_file])
     print("====================================================== current queue: =======================================================")
     subp.check_call(['squeue', '--me'])
-    sleep(3) # very important as otherwise the slurm jobs cant distinguish log directories and will overwrite the output files
+    # sleep(3) # very important as otherwise the slurm jobs cant distinguish log directories and will overwrite the output files
 
 
 def generate_random_string(length=6):

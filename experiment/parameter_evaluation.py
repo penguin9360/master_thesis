@@ -10,6 +10,7 @@ from start_experiment import enable_regression, enable_multiclass, experiment_na
 import numpy as np
 import argparse
 import sys
+from helpers import generate_random_string
 
 # pre-selected values
 # epochs = 150
@@ -44,8 +45,8 @@ max_lr_set = [0.00075, 0.001, 0.00125]
 batch_size_set = [48, 64, 96]
 
 # boundaries for random search
-lower_epochs = 50
-upper_epochs = 250
+lower_epochs = 10
+upper_epochs = 200
 lower_depth = 3
 upper_depth = 9
 lower_init_lr = 0.00005
@@ -54,6 +55,8 @@ lower_max_lr = 0.00075
 upper_max_lr = 0.00125
 lower_batch_size = 48
 upper_batch_size = 96
+
+random_string = generate_random_string()
 
 hyper_params = {}
 if search_option == "grid":
@@ -100,7 +103,7 @@ def set_experiment_params(experiment: Experiment, current_time):
 
     hpo_folder = "hpo/" + experiment_name + "/" + experiment_mode + "/"
     hpo_logs = hpo_folder + "logs/"
-    hpo_models = hpo_folder + "models/" + current_time + "/"
+    hpo_models = hpo_folder + "models/" + current_time + "_" + random_string + "/"
     if not os.path.exists(hpo_logs):
         os.makedirs(hpo_logs)
     if not os.path.exists(hpo_models):
@@ -207,16 +210,18 @@ if __name__ == "__main__":
     
     if enable_regression:
         current_time = datetime.now().strftime("%Y_%m%d_%H_%M_%S")
+
         set_experiment_params(experiment_regression, current_time)
-        best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
+        best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_" + current_time + "_" + random_string + ".txt"
         with open(best_param_log_name, 'w') as f:
             f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals}, search_option: {search_option}, \n started at {current_time}\n\n")
         run_hpo(num_evals, best_param_log_name)
 
     if enable_multiclass:
         current_time = datetime.now().strftime("%Y_%m%d_%H_%M_%S")
+
         set_experiment_params(experiment_multiclass, current_time)
-        best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_best_params_" + current_time + ".txt"
+        best_param_log_name = hpo_logs + experiment_name + "_" + experiment_mode + "_" + current_time + "_" + random_string + ".txt"
         with open(best_param_log_name, 'w') as f:
             f.write(f"experiment name: {experiment_name}, mode: {experiment_mode}, num_evals: {num_evals}, search_option: {search_option},  \n started at {current_time}\n\n")
         run_hpo(num_evals, best_param_log_name)

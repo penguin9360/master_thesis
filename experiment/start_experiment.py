@@ -9,7 +9,7 @@ import shutil
 import os
 
 # safest and easiest embarrassingly parallel appraoch - just copy this file and run multiple instances with different parameters
-offline_script = True # experiments will only run if it is set to true, otherwise it will only set up the parameters for the offline script
+offline_script = False # experiments will only run if it is set to true, otherwise it will only set up the parameters for the offline script
 
 # Basic options
 experiment_name = "1k" # '1k', '10k', '50k'
@@ -27,8 +27,8 @@ inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # HPO options - Note that currently only GNN HPO is supported. 
 # If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated and submitted.
-slurm_hpo_option = False
-num_evals = 10 # reduce to 35 for 50k grid and random search; 1k and 10k grid search used 50; random search can be embarrasingly parallelized so 5*10=50
+slurm_hpo_option = True
+num_evals = 5 # reduce to 35 for 50k grid and random search; 1k and 10k grid search used 50; random search can be embarrasingly parallelized so 5*10=50
 search_option = "random" # 'random' or 'grid'
 hpo_slurm_regression = "hpo_regression.slurm"
 hpo_slurm_multiclass = "hpo_multiclass.slurm"
@@ -126,10 +126,11 @@ if __name__ == "__main__":
             submit_hpo_slurm(hpo_slurm_file=hpo_slurm_regression, experiment_name=experiment_name, experiment_mode='regression', search_option=search_option, num_evals=num_evals)
         if enable_multiclass:
             submit_hpo_slurm(hpo_slurm_file=hpo_slurm_multiclass, experiment_name=experiment_name, experiment_mode='multiclass', search_option=search_option, num_evals=num_evals)
+        exit()
 
     # experiment 
     if offline_script:
-        if run_experiment and not slurm_hpo_option:
+        if run_experiment:
             if enable_gnn:
                 if enable_regression:
                     if retrain_gnn_with_optimal_param:

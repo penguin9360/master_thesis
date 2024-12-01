@@ -1,6 +1,7 @@
 import os
 import csv
 import random
+import string
 import pandas as pd
 import numpy as np
 from experiment_config import Experiment
@@ -111,6 +112,11 @@ def submit_offline_experiment_slurm(offline_slurm_file, offline_start_file):
     print("====================================================== current queue: =======================================================")
     subp.check_call(['squeue', '--me'])
     sleep(3) # very important as otherwise the slurm jobs cant distinguish log directories and will overwrite the output files
+
+
+def generate_random_string(length=6):
+            characters = string.ascii_lowercase + string.digits
+            return ''.join(random.choice(characters) for _ in range(length))
 
 
 def check_and_remove_duplicates(X_train, X_test, y_train, y_test):

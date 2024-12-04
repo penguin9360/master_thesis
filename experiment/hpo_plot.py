@@ -5,9 +5,11 @@ from collections import defaultdict
 from collections import OrderedDict
 
 experiment_name = "50k"
-experiment_mode = "regression" # regression or multiclass
+experiment_mode = "multiclass" # regression or multiclass
 hpo_result_path = f"./hpo/{experiment_name}/{experiment_mode}/logs/"
-
+new_search_boundary_color = 'green'
+old_search_boundary_color = 'blue'
+chosen_values_color = 'orange'
 
 def read_hpo_result_file(filepath):
     with open(filepath) as f:
@@ -50,17 +52,18 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
         'epochs': (1, 260), # originally (10, 250), adjusted to include the margins
         'depth': (2, 10),  # orignally (3, 9), adjusted to include the margins
         'init_lr': (1e-6, 1.7e-4), # originally (1e-5, 1.5e-4), adjusted to include the margins
-        'max_lr': (5e-4, 1.5e-3), # originally (7.5e-4, 1.25e-3), adjusted to include the margins
+        'max_lr': (7.1e-4, 1.29e-3), # originally (7.5e-4, 1.25e-3), adjusted to include the margins
         'batch_size': (41, 99) # originally (48, 96), adjusted to include the margins
     }
 
     original_bounds = {
-    'epochs': (10, 250),
-    'depth': (3, 9),
-    'init_lr': (1e-5, 1.5e-4),
-    'max_lr': (7.5e-4, 1.25e-3),
-    'batch_size': (48, 96)
-}
+        'epochs': (10, 250),
+        'depth': (3, 9),
+        'init_lr': (1e-5, 1.5e-4),
+        'max_lr': (7.5e-4, 1.25e-3),
+        'batch_size': (48, 96)
+    }
+
     ref_values = {
         'epochs': 150,
         'depth': 6,
@@ -85,7 +88,7 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
             print(f"Skipping non-matching experiment")
             continue
             
-        group_key = f"{result['mode']}_{result['search_opt']}_evals_{result['num_evals']}"
+        group_key = f"{result['mode']}_{result['search_opt']}_evals_{result['num_evals']}_parallel_runs"
         result_groups[group_key].append(result['params'])
 
     print(f"\nFound {len(result_groups)} groups:")
@@ -127,10 +130,10 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
                 ytick_positions = ytick_values / max_count * 0.8
                 ax.set_yticks(ytick_positions)
                 ax.set_yticklabels([f"{int(v)}" for v in ytick_values])
-                ax.axvline(x=ref_values[param], color='orange', linestyle='--',
+                ax.axvline(x=ref_values[param], color=chosen_values_color, linestyle='--',
                   label='Chosen values' if ax_idx==0 else '')
                 ref_text = f'{ref_values[param]:.0f}'
-                ax.text(ref_values[param], 1.02, ref_text, color='orange', rotation=0, ha='center', va='bottom',
+                ax.text(ref_values[param], 1.02, ref_text, color=chosen_values_color, rotation=0, ha='center', va='bottom',
                     transform=ax.get_xaxis_transform())
                 ax.set_xticks(range(3,10))
 
@@ -139,22 +142,42 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
                 y_pos = [0] * len(values)
                 ax.scatter(values, y_pos, alpha=0.6, 
                           label=group_key, color=colors[group_idx])
-                ax.axvline(x=ref_values[param], color='orange', linestyle='--',
+                ax.axvline(x=ref_values[param], color=chosen_values_color, linestyle='--',
                   label='Chosen values' if ax_idx==0 else '')
                 ref_text = f'{ref_values[param]:.0f}' if ref_values[param] >= 1 else f'{ref_values[param]:.2e}'
-                ax.text(ref_values[param], 1.02, ref_text, color='orange', rotation=0, ha='center', va='bottom',
+                ax.text(ref_values[param], 1.02, ref_text, color=chosen_values_color, rotation=0, ha='center', va='bottom',
                     transform=ax.get_xaxis_transform())
         
-        ax.axvline(x=original_bounds[param][0], color='green', linestyle='-', 
-            label='Search boundary' if ax_idx==0 else '')
-        ax.axvline(x=original_bounds[param][1], color='green', linestyle='-')
-        lower_text = f'{original_bounds[param][0]:.0f}' if original_bounds[param][0] >= 1 else f'{original_bounds[param][0]:.2e}'
-        upper_text = f'{original_bounds[param][1]:.0f}' if original_bounds[param][1] >= 1 else f'{original_bounds[param][1]:.2e}'
-        ax.text(original_bounds[param][0], 1.02, lower_text,
-                color='green', rotation=0, ha='center', va='bottom',
+        if param != 'epochs':
+            ax.axvline(x=original_bounds[param][0], color=new_search_boundary_color, linestyle='-', 
+                label='Search boundary' if ax_idx==0 else '')
+            ax.axvline(x=original_bounds[param][1], color=new_search_boundary_color, linestyle='-')
+            lower_text = f'{original_bounds[param][0]:.0f}' if original_bounds[param][0] >= 1 else f'{original_bounds[param][0]:.2e}'
+            upper_text = f'{original_bounds[param][1]:.0f}' if original_bounds[param][1] >= 1 else f'{original_bounds[param][1]:.2e}'
+            ax.text(original_bounds[param][0], 1.02, lower_text,
+                    color=new_search_boundary_color, rotation=0, ha='center', va='bottom',
+                    transform=ax.get_xaxis_transform())
+            ax.text(original_bounds[param][1], 1.02, upper_text,
+                    color=new_search_boundary_color, rotation=0, ha='center', va='bottom',
+                    transform=ax.get_xaxis_transform())
+        else:
+            search_boundary_old_epoch = (50, 250)
+            search_boundary_new_epoch = (10, 200)
+
+            ax.axvline(x=search_boundary_old_epoch[0], color=old_search_boundary_color, linestyle='-', 
+                label='Epoch search boundary for evals_10 parallel runs' if ax_idx==0 else '')
+            ax.text(search_boundary_old_epoch[0], 1.02, str(search_boundary_old_epoch[0]), color=old_search_boundary_color, rotation=0, ha='center', va='bottom',
                 transform=ax.get_xaxis_transform())
-        ax.text(original_bounds[param][1], 1.02, upper_text,
-                color='green', rotation=0, ha='center', va='bottom',
+            ax.axvline(x=search_boundary_old_epoch[1], color=old_search_boundary_color, linestyle='-')
+            ax.text(search_boundary_old_epoch[1], 1.02, str(search_boundary_old_epoch[1]), color=old_search_boundary_color, rotation=0, ha='center', va='bottom',   
+                transform=ax.get_xaxis_transform())
+
+            ax.axvline(x=search_boundary_new_epoch[0], color=new_search_boundary_color, linestyle='-', 
+                       label='Search boundary' if ax_idx==0 else '')
+            ax.text(search_boundary_new_epoch[0], 1.02, str(search_boundary_new_epoch[0]), color=new_search_boundary_color, rotation=0, ha='center', va='bottom',   
+                transform=ax.get_xaxis_transform())
+            ax.axvline(x=search_boundary_new_epoch[1], color=new_search_boundary_color, linestyle='-')
+            ax.text(search_boundary_new_epoch[1], 1.02, str(search_boundary_new_epoch[1]), color=new_search_boundary_color, rotation=0, ha='center', va='bottom',   
                 transform=ax.get_xaxis_transform())
         
         ax.set_xlim(param_limits[param])
@@ -177,7 +200,7 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
         labels.extend(l)
     by_label = OrderedDict(zip(labels, handles))
     fig.legend(by_label.values(), by_label.keys(),
-            loc='upper center', bbox_to_anchor=(0.5, 0.95), ncol=4)
+            loc='upper center', bbox_to_anchor=(0.5, 0.95), ncol=3)
 
     plt.savefig(figure_path, bbox_inches='tight', dpi=300)
     plt.close()

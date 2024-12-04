@@ -12,7 +12,7 @@ import os
 offline_script = True # experiments will only run if it is set to true, otherwise it will only set up the parameters for the offline script
 
 # Basic options
-experiment_name = "1k" # '1k', '10k', '50k'
+experiment_name = "50k" # '1k', '10k', '50k'
 run_experiment = True
 run_analysis = True
 enable_gnn = True
@@ -27,7 +27,7 @@ inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # HPO options - Note that currently only GNN HPO is supported. 
 # If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated and submitted.
-slurm_hpo_option = False
+slurm_hpo_option = True
 num_evals = 5 # reduce to 35 for 50k grid and random search; 1k and 10k grid search used 50; random search can be embarrasingly parallelized so 5*10=50
 search_option = "random" # 'random' or 'grid'
 hpo_slurm_regression = "hpo_regression.slurm"

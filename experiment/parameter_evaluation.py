@@ -46,7 +46,7 @@ batch_size_set = [48, 64, 96]
 
 # boundaries for random search
 lower_epochs = 10
-upper_epochs = 200
+upper_epochs = 200 # was 50 - 250
 lower_depth = 3
 upper_depth = 9
 lower_init_lr = 0.00005

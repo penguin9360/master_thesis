@@ -5,7 +5,7 @@ from collections import defaultdict
 from collections import OrderedDict
 
 experiment_name = "50k"
-experiment_mode = "multiclass" # regression or multiclass
+experiment_mode = "regression" # regression or multiclass
 hpo_result_path = f"./hpo/{experiment_name}/{experiment_mode}/logs/"
 new_search_boundary_color = 'green'
 old_search_boundary_color = 'blue'
@@ -98,7 +98,7 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
         print(f"Sample values: {results[0]}")
 
     param_names = ['epochs', 'depth', 'init_lr', 'max_lr', 'batch_size']
-    fig, axes = plt.subplots(len(param_names), 1, figsize=(12, 12))
+    fig, axes = plt.subplots(len(param_names), 1, figsize=(12, 14))
     colors = plt.cm.Set2(np.linspace(0, 1, len(result_groups)))
     
     for ax_idx, (param, ax) in enumerate(zip(param_names, axes)):
@@ -200,7 +200,7 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
         labels.extend(l)
     by_label = OrderedDict(zip(labels, handles))
     fig.legend(by_label.values(), by_label.keys(),
-            loc='upper center', bbox_to_anchor=(0.5, 0.95), ncol=3)
+            loc='upper center', bbox_to_anchor=(0.5, 0.95), ncol=1)
 
     plt.savefig(figure_path, bbox_inches='tight', dpi=300)
     plt.close()

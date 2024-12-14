@@ -9,7 +9,7 @@ import re
 import copy
 
 experiment_name = "50k"
-experiment_mode = "regression" # regression or multiclass
+experiment_mode = "multiclass" # regression or multiclass
 hpo_result_path = f"./hpo/{experiment_name}/{experiment_mode}/logs/"
 new_search_boundary_color = 'green'
 old_search_boundary_color = 'blue'
@@ -17,8 +17,9 @@ reference_values_color = 'red'
 mean_color = 'purple'
 std_dev_color = 'yellow'
 std_dev_alpha = 0.03
-graph_size = (12, 16)
+graph_size = (12, 15)
 legend_colums = 2
+label_fontsize = 14
 
 
 def extract_date_from_path(path):
@@ -202,7 +203,7 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
                         ha='center', va='bottom', transform=ax.get_xaxis_transform())
                 ax.grid(True)
                 ax.set_xlim(param_limits['test_metrics'])
-                ax.set_xlabel('RMSE' if experiment_mode == 'regression' else 'Cross Entropy')
+                ax.set_xlabel('test_rmse' if experiment_mode == 'regression' else 'test_cross_entropy', fontsize=label_fontsize)
 
                 if not test_metrics_plotted:
                     mean = np.mean(all_metrics[0])
@@ -272,6 +273,12 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
                     ax.text(ref_values[param], 1.02, ref_text, 
                             color=reference_values_color, rotation=0,
                             ha='center', va='bottom', transform=ax.get_xaxis_transform())
+            
+            ax.set_xlim(param_limits[param])
+            ax.margins(x=0.02)
+            ax.grid(True, axis='x')
+            if param != 'test_metrics':
+                ax.set_xlabel(param, fontsize=label_fontsize)
         
         if param != 'epochs' and param != 'test_metrics':
             ax.axvline(x=original_bounds[param][0], color=new_search_boundary_color, linestyle='-', 
@@ -341,11 +348,6 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
                 ax.grid(True, axis='x')
                 ax.grid(False, axis='y')
                 ax.set_yticks([])
-        
-        ax.set_xlim(param_limits[param])
-        ax.margins(x=0.02)
-        ax.grid(True, axis='x')
-        ax.set_xlabel(param)
         
         if param != 'depth':
             ax.set_yticks([])

@@ -9,7 +9,7 @@ import re
 import copy
 
 experiment_name = "50k"
-experiment_mode = "multiclass" # regression or multiclass
+experiment_mode = "regression" # regression or multiclass
 hpo_result_path = f"./hpo/{experiment_name}/{experiment_mode}/logs/"
 new_search_boundary_color = 'green'
 old_search_boundary_color = 'blue'
@@ -317,7 +317,7 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
                         ha='center', va='bottom', transform=ax.get_xaxis_transform())
         
         for ax_idx, (param, ax) in enumerate(zip(param_names, axes)):
-            if param != 'test_metrics' and param != 'depth':
+            if param != 'test_metrics':
                 all_values = []
                 for group_key, results in result_groups.items():
                     values = [r[param] for r in results if 'test_metrics' not in r]

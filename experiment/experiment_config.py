@@ -27,7 +27,7 @@ class Experiment:
     UNSOLVED_LENGTH = 0
     NO_CUDA_OPTION = True
 
-    cleanable_directories = ["gnn", "xgboost", "figures"] # "train_test", "result_extract"
+    cleanable_directories = ["gnn", "xgboost", "figures", "slurm_output/offline_run", "slurm_output/inference"] # "train_test", "result_extract"
 
 
     def __init__(self, name, mode, no_cuda_option, inference_option, inference_name, graph_format_options):

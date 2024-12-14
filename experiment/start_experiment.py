@@ -27,7 +27,7 @@ inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # HPO options - Note that currently only GNN HPO is supported. 
 # If this flag is set to true, experiments and result analysis will not run, but the hpo.slurm file will be updated and submitted.
-slurm_hpo_option = True
+slurm_hpo_option = False
 num_evals = 5 # reduce to 35 for 50k grid and random search; 1k and 10k grid search used 50; random search can be embarrasingly parallelized so 5*10=50
 search_option = "random" # 'random' or 'grid'
 hpo_slurm_regression = "hpo_regression.slurm"
@@ -36,7 +36,7 @@ hpo_slurm_multiclass = "hpo_multiclass.slurm"
 retrain_gnn_with_optimal_param = False
 
 # default parameters for base experiments, can be tuned
-epochs = 15 # in paper 150, default 50, 15 from learning curve indication
+epochs = 150 # in paper 150, default 50, 15 from learning curve indication
 depth = 6
 
 # Cleanup options

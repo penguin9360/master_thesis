@@ -6,13 +6,20 @@ from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
 import re
+import copy
 
 experiment_name = "50k"
 experiment_mode = "multiclass" # regression or multiclass
 hpo_result_path = f"./hpo/{experiment_name}/{experiment_mode}/logs/"
 new_search_boundary_color = 'green'
 old_search_boundary_color = 'blue'
-chosen_values_color = 'orange'
+reference_values_color = 'red'
+mean_color = 'purple'
+std_dev_color = 'yellow'
+std_dev_alpha = 0.03
+graph_size = (12, 16)
+legend_colums = 2
+
 
 def extract_date_from_path(path):
     date_pattern = r'(\d{4}_\d{4}_\d{2}_\d{2}_\d{2})'
@@ -116,9 +123,9 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
         'test_metrics': (0, 3),  # Add appropriate range based on your metrics
     }
     if experiment_mode == 'multiclass':
-        param_limits['test_metrics'] = (0.75, 0.95)
+        param_limits['test_metrics'] = (0.84, 0.900)
     else:
-        param_limits['test_metrics'] = (2.25, 2.45)
+        param_limits['test_metrics'] = (2.3, 2.4)
 
     original_bounds = {
         'epochs': (10, 250),
@@ -178,26 +185,42 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
         print(f"Sample values: {results[0]}")
 
     param_names = ['test_metrics', 'epochs', 'depth', 'init_lr', 'max_lr', 'batch_size']
-    fig, axes = plt.subplots(len(param_names), 1, figsize=(12, 15))
+    fig, axes = plt.subplots(len(param_names), 1, figsize=graph_size)
     colors = plt.cm.Set2(np.linspace(0, 1, len(result_groups)))
-    
+    test_metrics_plotted = False
     for ax_idx, (param, ax) in enumerate(zip(param_names, axes)):
         for group_idx, (group_key, results) in enumerate(result_groups.items()):
             if param == 'test_metrics':
+                all_metrics = [r['test_metrics'] for r in results if 'test_metrics' in r]
                 for group_idx, (group_key, results) in enumerate(result_groups.items()):
                     metrics = next(r['test_metrics'] for r in results if 'test_metrics' in r)
-                    # Create evenly spaced x coordinates within param limits
-                    x_min, x_max = param_limits['test_metrics']
-                    x = np.linspace(x_min, x_max, len(metrics))
                     ax.scatter(metrics, [0] * len(metrics), alpha=0.6, label=group_key, color=colors[group_idx])
-                    ref_text = f'{ref_values["test_metrics"]:.3f}'
-                    ax.text(ref_values["test_metrics"], 1.02, ref_text,
-                            color=chosen_values_color, rotation=0,
-                            ha='center', va='bottom', transform=ax.get_xaxis_transform())
-                
+                ref_text = f'{ref_values["test_metrics"]:.3f}'
+                ax.axvline(x=ref_values["test_metrics"], color=reference_values_color, linestyle=':', label='Reference values')
+                ax.text(ref_values["test_metrics"], 1.02, ref_text,
+                        color=reference_values_color, rotation=0,
+                        ha='center', va='bottom', transform=ax.get_xaxis_transform())
                 ax.grid(True)
                 ax.set_xlim(param_limits['test_metrics'])
-                ax.set_xlabel('Test metric value')
+                ax.set_xlabel('RMSE' if experiment_mode == 'regression' else 'Cross Entropy')
+
+                if not test_metrics_plotted:
+                    mean = np.mean(all_metrics[0])
+                    std = np.std(all_metrics[0])
+                    ax.axvline(x=mean, color=mean_color, linestyle='--', linewidth=2, label='Mean')
+                    ax.axvspan(mean - std, mean + std, alpha=0.2, color=std_dev_color)
+                    
+                    # this is just for visible color in legend
+                    ax.axvspan(-2, -1, alpha=1, color=std_dev_color, label='Std. dev.')
+
+                    mean_text = f'{mean:.3f}' if mean >= 0.1 else f'{mean:.2e}'
+                    ax.text(mean * 1.0005, 0.95, mean_text, color=mean_color, rotation=0,
+                        ha='left', va='top',
+                        transform=ax.get_xaxis_transform())
+                    ax.grid(False, axis='y')
+                    ax.set_yticks([])
+                    test_metrics_plotted = True
+
             if param == 'depth':
                 group_counts = []
                 for group_key, results in result_groups.items():
@@ -225,31 +248,29 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
                 ytick_positions = ytick_values / max_count * 0.8
                 ax.set_yticks(ytick_positions)
                 ax.set_yticklabels([f"{int(v)}" for v in ytick_values])
-                ax.axvline(x=ref_values[param], color=chosen_values_color, linestyle='--',
+                ax.axvline(x=ref_values[param], color=reference_values_color, linestyle='--',
                   label='Reference values' if ax_idx==0 else '')
                 ref_text = f'{ref_values[param]:.0f}'
-                ax.text(ref_values[param], 1.02, ref_text, color=chosen_values_color, rotation=0,
+                ax.text(ref_values[param], 1.02, ref_text, color=reference_values_color, rotation=0,
                     ha='center', va='bottom')
                 ax.set_xticks(range(3,10))
 
             else:
-                # For test_metrics, only get items that have it
                 if param == 'test_metrics':
                     metrics = next(r['test_metrics'] for r in results if 'test_metrics' in r)
                     values = metrics
                 else:
-                    # For other params, skip the test_metrics dict
                     values = [r[param] for r in results if 'test_metrics' not in r]
                 y_pos = [0] * len(values)
                 ax.scatter(values, y_pos, alpha=0.6, 
                           label=group_key, color=colors[group_idx])
-                ax.axvline(x=ref_values[param], color=chosen_values_color, linestyle='--',
-                  label='Chosen values' if ax_idx==0 else '')
+                ax.axvline(x=ref_values[param], color=reference_values_color, linestyle='--',
+                  label='Reference values' if ax_idx==0 else '')
                 if param != 'test_metrics': 
                     group_key = next(iter(result_groups))
                     ref_text = f'{ref_values[param]:.0f}' if ref_values[param] >= 1 else f'{ref_values[param]:.2e}'
                     ax.text(ref_values[param], 1.02, ref_text, 
-                            color=chosen_values_color, rotation=0,
+                            color=reference_values_color, rotation=0,
                             ha='center', va='bottom', transform=ax.get_xaxis_transform())
         
         if param != 'epochs' and param != 'test_metrics':
@@ -295,6 +316,32 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
                         color=new_search_boundary_color, rotation=0,
                         ha='center', va='bottom', transform=ax.get_xaxis_transform())
         
+        for ax_idx, (param, ax) in enumerate(zip(param_names, axes)):
+            if param != 'test_metrics' and param != 'depth':
+                all_values = []
+                for group_key, results in result_groups.items():
+                    values = [r[param] for r in results if 'test_metrics' not in r]
+                    all_values.extend(values)
+
+                mean = np.mean(all_values)
+                std = np.std(all_values)
+
+                ax.axvline(x=mean, color=mean_color, 
+                        linestyle='--', linewidth=2, 
+                        label='Mean' if ax_idx==1 else '')
+                mean_text = f'{mean:.2f}' if mean >= 1 else f'{mean:.2e}'
+                ax.text(mean * 1.01, 0.95, mean_text,
+                        color=mean_color, rotation=0,
+                        ha='left', va='top',
+                        transform=ax.get_xaxis_transform())
+
+                ax.axvspan(mean - std, mean + std, 
+                        alpha=std_dev_alpha, color=std_dev_color)
+                        # label='Std. dev.' if ax_idx==1 else '')
+                ax.grid(True, axis='x')
+                ax.grid(False, axis='y')
+                ax.set_yticks([])
+        
         ax.set_xlim(param_limits[param])
         ax.margins(x=0.02)
         ax.grid(True, axis='x')
@@ -315,7 +362,7 @@ def plot_hpo_result_layover_graphs(experiment_name, experiment_mode, search_opti
         labels.extend(l)
     by_label = OrderedDict(zip(labels, handles))
     fig.legend(by_label.values(), by_label.keys(),
-            loc='upper center', bbox_to_anchor=(0.5, 0.95), ncol=1)
+            loc='upper center', bbox_to_anchor=(0.5, 0.95), ncol=legend_colums)
 
     plt.savefig(figure_path, bbox_inches='tight', dpi=300)
     plt.close()

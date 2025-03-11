@@ -12,17 +12,17 @@ import os
 offline_script = True # experiments will only run if it is set to true, otherwise it will only set up the parameters for the offline script
 
 # Basic options
-experiment_name = "50k" # '1k', '10k', '50k'
-run_experiment = True
+experiment_name = "1k" # '1k', '10k', '50k'
+run_experiment = False
 run_analysis = True
 enable_gnn = True
 enable_xgboost = True
-enable_regression = True
+enable_regression = False
 enable_multiclass = True
 NO_CUDA_OPTION = False
 
 # Inference options
-inference_option = False
+inference_option = True
 inference_name = "200k" # '1k', '10k', '50k', '200k'
 
 # HPO options - Note that currently only GNN HPO is supported. 
@@ -104,12 +104,17 @@ graph_format_options = {
     "training_graph_xlabel": "Epochs",
     "training_graph_ytick_rotation": 45,
     "train_loss_ylim": (-0.1, 1.5),
-    "crossentropy_ylim": (0, 4),
+    "crossentropy_ylim": (0, 7),
     "rmse_ylim": (0, 4),
     "grid_color": 'white',
     "box_plot_xlim": (-0.5, 10.5),
     "box_plot_ylim": (-3.9, 10.9),
     "smooth_curve_option": False,
+    "vmax": 60000 if inference_option and inference_name == "200k" 
+        else (30 if experiment_name == "1k" and not inference_option
+             else (300 if experiment_name == "10k" and not inference_option
+                  else (1300 if experiment_name == "50k" and not inference_option 
+                       else None)))
 }
 
 

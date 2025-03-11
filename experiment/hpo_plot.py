@@ -9,7 +9,7 @@ import re
 import copy
 
 experiment_name = "50k"
-experiment_mode = "multiclass" # regression or multiclass
+experiment_mode = "regression" # regression or multiclass
 hpo_result_path = f"./hpo/{experiment_name}/{experiment_mode}/logs/"
 new_search_boundary_color = 'green'
 old_search_boundary_color = 'blue'

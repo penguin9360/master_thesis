@@ -23,6 +23,7 @@ inference_name = ""
 df = None
 graph_format_options = {}
 
+
 def calculate_regression_metrics(df):
     rmse = np.sqrt(mean_squared_error(y_true=df['route_length_truth'], y_pred=df['route_length_predicted']))
     print("RMSE:", rmse)

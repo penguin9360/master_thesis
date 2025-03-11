@@ -565,7 +565,8 @@ def make_confusion_matrix(cf,
                           cmap='Blues',
                           title=None,
                           filename=None,
-                          fontsize=20): 
+                          fontsize=20, 
+                          ): 
     '''
     This function will make a pretty plot of an sklearn Confusion Matrix cm using a Seaborn heatmap visualization.
 
@@ -624,7 +625,6 @@ def make_confusion_matrix(cf,
     box_labels = np.asarray(box_labels).reshape(cf.shape[0],cf.shape[1])
 
 
-    # CODE TO GENERATE SUMMARY STATISTICS & TEXT FOR SUMMARY STATS
     if sum_stats:
         #Accuracy is sum of diagonal divided by total observations
         accuracy  = np.trace(cf) / float(np.sum(cf))
@@ -642,8 +642,6 @@ def make_confusion_matrix(cf,
     else:
         stats_text = ""
 
-
-    # SET FIGURE PARAMETERS ACCORDING TO OTHER ARGUMENTS
     if figsize==None:
         #Get default figure size if not set
         figsize = plt.rcParams.get('figure.figsize')
@@ -653,16 +651,13 @@ def make_confusion_matrix(cf,
         categories=False
 
 
-    # MAKE THE HEATMAP VISUALIZATION
     plt.figure(figsize=figsize)
-    cf_heatmap = sns.heatmap(cf,annot=box_labels,fmt="",cmap=cmap,cbar=cbar,xticklabels=categories,yticklabels=categories,annot_kws={"size": fontsize})
+    vmax = graph_format_options["vmax"]
+    cf_heatmap = sns.heatmap(cf,annot=box_labels,fmt="",cmap=cmap,cbar=cbar,xticklabels=categories,yticklabels=categories,annot_kws={"size": fontsize}, vmax=vmax)
     cf_heatmap.set_xticklabels(cf_heatmap.get_xticklabels(), fontsize=fontsize)
     cf_heatmap.set_yticklabels(cf_heatmap.get_yticklabels(), fontsize=fontsize)
 
-    # Obtain the cbar object from the heatmap
     cbar_obj = cf_heatmap.collections[0].colorbar
-
-    # Now you can modify the cbar object, for example, setting the font size of its labels
     cbar_obj.ax.tick_params(labelsize=fontsize) 
 
     fig = cf_heatmap.get_figure()
